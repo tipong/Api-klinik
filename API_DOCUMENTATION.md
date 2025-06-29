@@ -44,7 +44,7 @@ We've included Postman collection and environment files to help you test the API
 ### Testing Workflow
 
 1. Register a new user (or use existing credentials)
-2. Login to get the authentication token (automatically saved to environment)
+2. Login with email and password to get the authentication token (automatically saved to environment)
 3. All subsequent authenticated requests will use this token
 
 ## API Endpoints
@@ -52,7 +52,7 @@ We've included Postman collection and environment files to help you test the API
 ### Authentication
 
 - `POST /api/auth/register` - Register a new user
-- `POST /api/auth/login` - Login and get token
+- `POST /api/auth/login` - Login with email and password to get token
 - `GET /api/auth/profile` - Get current user profile
 - `PUT /api/auth/profile` - Update user profile
 - `POST /api/auth/logout` - Logout

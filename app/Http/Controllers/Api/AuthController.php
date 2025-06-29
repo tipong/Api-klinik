@@ -81,8 +81,7 @@ class AuthController extends Controller
     public function login(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'username' => 'required_without:email|string|max:50',
-            'email' => 'required_without:username|email|max:100',
+            'email' => 'required|email|max:100',
             'password' => 'required|string',
         ]);
 
@@ -94,10 +93,11 @@ class AuthController extends Controller
             ], 422);
         }
 
-        // Check if login is with username or email
-        $credentials = $request->has('username') 
-            ? ['username' => $request->username, 'password' => $request->password]
-            : ['email' => $request->email, 'password' => $request->password];
+        // Use email for authentication
+        $credentials = [
+            'email' => $request->email,
+            'password' => $request->password
+        ];
 
         if (!Auth::attempt($credentials)) {
             return response()->json([
