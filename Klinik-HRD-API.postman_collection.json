@@ -1,0 +1,794 @@
+{
+	"info": {
+		"_postman_id": "c9e2c58e-5a8f-48da-b6e0-20a3c6f8d5a6",
+		"name": "Klinik-HRD-API",
+		"description": "Collection for testing the HRD & Management System API for Klinik Application",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Authentication",
+			"item": [
+				{
+					"name": "Register",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"hrdadmin\",\n    \"password\": \"password123\",\n    \"password_confirmation\": \"password123\",\n    \"email\": \"hrdadmin@example.com\",\n    \"nama\": \"HRD Admin\",\n    \"role\": \"hrd\",\n    \"phone\": \"081234567890\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/register",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"auth",
+								"register"
+							]
+						},
+						"description": "Register a new user"
+					},
+					"response": []
+				},
+				{
+					"name": "Login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json();",
+									"if (jsonData.status === \"success\" && jsonData.data && jsonData.data.token) {",
+									"    pm.environment.set(\"token\", jsonData.data.token);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"hrdadmin\",\n    \"password\": \"password123\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/login",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"auth",
+								"login"
+							]
+						},
+						"description": "Login with user credentials and get token"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Profile",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/auth/profile",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"auth",
+								"profile"
+							]
+						},
+						"description": "Get currently logged in user profile"
+					},
+					"response": []
+				},
+				{
+					"name": "Update Profile",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"nama\": \"Updated HRD Admin\",\n    \"phone\": \"081234567899\",\n    \"alamat\": \"Jl. HR Rasuna Said No. 10\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/profile",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"auth",
+								"profile"
+							]
+						},
+						"description": "Update user profile"
+					},
+					"response": []
+				},
+				{
+					"name": "Logout",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/auth/logout",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"auth",
+								"logout"
+							]
+						},
+						"description": "Logout and invalidate the current token"
+					},
+					"response": []
+				}
+			],
+			"description": "Authentication related endpoints"
+		},
+		{
+			"name": "Pegawai",
+			"item": [
+				{
+					"name": "Get All Pegawai",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/pegawai?nama=&posisi_id=&status_aktif=",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"pegawai"
+							],
+							"query": [
+								{
+									"key": "nama",
+									"value": ""
+								},
+								{
+									"key": "posisi_id",
+									"value": ""
+								},
+								{
+									"key": "status_aktif",
+									"value": ""
+								}
+							]
+						},
+						"description": "Get all pegawai with optional filters"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Pegawai Detail",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/pegawai/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"pegawai",
+								"1"
+							]
+						},
+						"description": "Get specific pegawai by ID"
+					},
+					"response": []
+				},
+				{
+					"name": "Create Pegawai",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"user_id\": 1,\n    \"posisi_id\": 1,\n    \"nip\": \"NIP123456\",\n    \"nama\": \"John Doe\",\n    \"tempat_lahir\": \"Jakarta\",\n    \"tanggal_lahir\": \"1990-01-01\",\n    \"jenis_kelamin\": \"Laki-laki\",\n    \"alamat\": \"Jl. HR Rasuna Said No. 1\",\n    \"no_telp\": \"081234567890\",\n    \"email\": \"john.doe@example.com\",\n    \"pendidikan_terakhir\": \"S1\",\n    \"tanggal_masuk\": \"2023-01-01\",\n    \"status_kepegawaian\": \"Tetap\",\n    \"status_aktif\": \"Aktif\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/pegawai",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"pegawai"
+							]
+						},
+						"description": "Create a new pegawai"
+					},
+					"response": []
+				},
+				{
+					"name": "Update Pegawai",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"nama\": \"John Doe Updated\",\n    \"alamat\": \"Jl. HR Rasuna Said No. 2\",\n    \"no_telp\": \"081234567899\",\n    \"status_kepegawaian\": \"Tetap\",\n    \"status_aktif\": \"Aktif\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/pegawai/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"pegawai",
+								"1"
+							]
+						},
+						"description": "Update an existing pegawai"
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Pegawai",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/pegawai/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"pegawai",
+								"1"
+							]
+						},
+						"description": "Delete a pegawai"
+					},
+					"response": []
+				}
+			],
+			"description": "Pegawai (Employee) management endpoints"
+		},
+		{
+			"name": "Absensi",
+			"item": [
+				{
+					"name": "Get All Absensi",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/absensi?tanggal_dari=&tanggal_sampai=&pegawai_id=&status=",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"absensi"
+							],
+							"query": [
+								{
+									"key": "tanggal_dari",
+									"value": ""
+								},
+								{
+									"key": "tanggal_sampai",
+									"value": ""
+								},
+								{
+									"key": "pegawai_id",
+									"value": ""
+								},
+								{
+									"key": "status",
+									"value": ""
+								}
+							]
+						},
+						"description": "Get all absensi with optional filters"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Absensi Detail",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/absensi/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"absensi",
+								"1"
+							]
+						},
+						"description": "Get specific absensi by ID"
+					},
+					"response": []
+				},
+				{
+					"name": "Create Absensi",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"pegawai_id\": 1,\n    \"tanggal\": \"2025-06-29\",\n    \"jam_masuk\": \"2025-06-29 08:00:00\",\n    \"lokasi_masuk\": \"Kantor Pusat\",\n    \"keterangan\": \"Absensi masuk\",\n    \"status\": \"Hadir\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/absensi",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"absensi"
+							]
+						},
+						"description": "Create a new absensi (check-in)"
+					},
+					"response": []
+				},
+				{
+					"name": "Update Absensi (Check Out)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"jam_keluar\": \"2025-06-29 17:00:00\",\n    \"lokasi_keluar\": \"Kantor Pusat\",\n    \"keterangan\": \"Absensi lengkap\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/absensi/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"absensi",
+								"1"
+							]
+						},
+						"description": "Update absensi for check-out"
+					},
+					"response": []
+				},
+				{
+					"name": "Get User Today Attendance",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/absensi/user/today",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"absensi",
+								"user",
+								"today"
+							]
+						},
+						"description": "Get current user's today attendance status"
+					},
+					"response": []
+				}
+			],
+			"description": "Absensi (Attendance) management endpoints"
+		},
+		{
+			"name": "Gaji",
+			"item": [
+				{
+					"name": "Get All Gaji",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/gaji?pegawai_id=&periode_awal=&periode_akhir=&status_pembayaran=",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"gaji"
+							],
+							"query": [
+								{
+									"key": "pegawai_id",
+									"value": ""
+								},
+								{
+									"key": "periode_awal",
+									"value": ""
+								},
+								{
+									"key": "periode_akhir",
+									"value": ""
+								},
+								{
+									"key": "status_pembayaran",
+									"value": ""
+								}
+							]
+						},
+						"description": "Get all gaji with optional filters"
+					},
+					"response": []
+				}
+			],
+			"description": "Gaji (Salary) management endpoints"
+		},
+		{
+			"name": "Lowongan & Lamaran",
+			"item": [
+				{
+					"name": "Get All Lowongan",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/lowongan?status=Buka",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"lowongan"
+							],
+							"query": [
+								{
+									"key": "status",
+									"value": "Buka"
+								}
+							]
+						},
+						"description": "Get all job postings with optional filters"
+					},
+					"response": []
+				},
+				{
+					"name": "Submit Application",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"lowongan_id\": 1,\n    \"user_id\": 3,\n    \"nama_pelamar\": \"Jane Doe\",\n    \"email_pelamar\": \"jane.doe@example.com\",\n    \"no_telp_pelamar\": \"081234567890\",\n    \"alamat_pelamar\": \"Jl. HR Rasuna Said No. 5\",\n    \"pendidikan_terakhir\": \"S1\",\n    \"pengalaman_kerja\": \"2 tahun sebagai staff HRD\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/lowongan/apply",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"lowongan",
+								"apply"
+							]
+						},
+						"description": "Submit a job application"
+					},
+					"response": []
+				}
+			],
+			"description": "Job posting and application endpoints"
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://127.0.0.1:8000/api",
+			"type": "string"
+		}
+	]
+}
