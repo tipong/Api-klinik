@@ -17,24 +17,20 @@ class AuthController extends Controller
     public function register(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'username' => 'required|string|max:50|unique:tb_user,username',
-            'email' => 'required|string|email|max:100|unique:tb_user,email',
-            'nama' => 'required|string|max:100',
+            'nama_user' => 'required|string|max:255',
+            'no_telp' => 'required|string|max:255|unique:tb_user,no_telp',
+            'email' => 'required|string|email|max:255|unique:tb_user,email',
             'password' => 'required|string|min:8|confirmed',
-            'role' => 'required|in:admin,hrd,front_office,kasir,dokter,beautician,pelanggan',
-            'phone' => 'nullable|string|max:20',
-            'no_telepon' => 'nullable|string|max:20', // Support both formats
-            'alamat' => 'nullable|string',
-            'address' => 'nullable|string', // Support both formats
-            'jenis_kelamin' => 'nullable|in:male,female',
-            'gender' => 'nullable|in:male,female', // Support both formats
+            'role' => 'required|in:admin,hrd,front office,kasir,dokter,beautician,pelanggan',
+            'tanggal_lahir' => 'nullable|date',
+            'foto_profil' => 'nullable|string|max:255',
         ], [
-            'username.required' => 'Username harus diisi',
-            'username.unique' => 'Username sudah digunakan',
+            'nama_user.required' => 'Nama user harus diisi',
+            'no_telp.required' => 'Nomor telepon harus diisi',
+            'no_telp.unique' => 'Nomor telepon sudah digunakan',
             'email.required' => 'Email harus diisi',
             'email.email' => 'Format email tidak valid',
             'email.unique' => 'Email sudah terdaftar',
-            'nama.required' => 'Nama harus diisi',
             'password.required' => 'Password harus diisi',
             'password.min' => 'Password minimal 8 karakter',
             'password.confirmed' => 'Konfirmasi password tidak cocok',
@@ -51,21 +47,14 @@ class AuthController extends Controller
         }
 
         try {
-            // Handle dual format fields
-            $phone = $request->phone ?? $request->no_telepon;
-            $alamat = $request->alamat ?? $request->address;
-            $gender = $request->jenis_kelamin ?? $request->gender;
-
             $user = User::create([
-                'username' => $request->username,
+                'nama_user' => $request->nama_user,
+                'no_telp' => $request->no_telp,
                 'email' => $request->email,
-                'nama' => $request->nama,
                 'password' => Hash::make($request->password),
                 'role' => $request->role,
-                'phone' => $phone,
-                'alamat' => $alamat,
-                'jenis_kelamin' => $gender,
-                'status' => 'aktif',
+                'tanggal_lahir' => $request->tanggal_lahir,
+                'foto_profil' => $request->foto_profil,
             ]);
 
             $token = $user->createToken('auth_token')->plainTextToken;
@@ -75,14 +64,13 @@ class AuthController extends Controller
                 'message' => 'User registered successfully',
                 'data' => [
                     'user' => [
-                        'id' => $user->id,
-                        'username' => $user->username,
+                        'id_user' => $user->id_user,
+                        'nama_user' => $user->nama_user,
+                        'no_telp' => $user->no_telp,
                         'email' => $user->email,
-                        'nama' => $user->nama,
                         'role' => $user->role,
-                        'phone' => $user->phone,
-                        'alamat' => $user->alamat,
-                        'status' => $user->status,
+                        'tanggal_lahir' => $user->tanggal_lahir,
+                        'foto_profil' => $user->foto_profil,
                     ],
                     'token' => $token,
                 ],
@@ -160,15 +148,13 @@ class AuthController extends Controller
             'status' => 'success',
             'data' => [
                 'user' => [
-                    'id' => $user->id,
-                    'username' => $user->username,
+                    'id_user' => $user->id_user,
+                    'nama_user' => $user->nama_user,
                     'email' => $user->email,
-                    'nama' => $user->nama,
+                    'no_telp' => $user->no_telp,
                     'role' => $user->role,
-                    'phone' => $user->phone,
-                    'alamat' => $user->alamat,
-                    'status' => $user->status,
-                    'photo' => $user->photo,
+                    'tanggal_lahir' => $user->tanggal_lahir,
+                    'foto_profil' => $user->foto_profil,
                     'created_at' => $user->created_at,
                 ],
             ],
@@ -183,9 +169,10 @@ class AuthController extends Controller
         $user = $request->user();
 
         $validator = Validator::make($request->all(), [
-            'nama' => 'sometimes|required|string|max:100',
-            'phone' => 'nullable|string|max:20',
-            'alamat' => 'nullable|string',
+            'nama_user' => 'sometimes|required|string|max:255',
+            'no_telp' => 'sometimes|required|string|max:255|unique:tb_user,no_telp,' . $user->id_user . ',id_user',
+            'tanggal_lahir' => 'nullable|date',
+            'foto_profil' => 'nullable|string|max:255',
             'current_password' => 'required_with:password|string',
             'password' => 'nullable|string|min:8|confirmed',
         ]);
@@ -211,14 +198,17 @@ class AuthController extends Controller
             }
 
             // Update other fields
-            if ($request->has('nama')) {
-                $user->nama = $request->nama;
+            if ($request->has('nama_user')) {
+                $user->nama_user = $request->nama_user;
             }
-            if ($request->has('phone')) {
-                $user->phone = $request->phone;
+            if ($request->has('no_telp')) {
+                $user->no_telp = $request->no_telp;
             }
-            if ($request->has('alamat')) {
-                $user->alamat = $request->alamat;
+            if ($request->has('tanggal_lahir')) {
+                $user->tanggal_lahir = $request->tanggal_lahir;
+            }
+            if ($request->has('foto_profil')) {
+                $user->foto_profil = $request->foto_profil;
             }
 
             $user->save();
@@ -228,17 +218,17 @@ class AuthController extends Controller
                 'message' => 'Profile updated successfully',
                 'data' => [
                     'user' => [
-                        'id' => $user->id,
-                        'username' => $user->username,
+                        'id_user' => $user->id_user,
+                        'nama_user' => $user->nama_user,
                         'email' => $user->email,
-                        'nama' => $user->nama,
+                        'no_telp' => $user->no_telp,
                         'role' => $user->role,
-                        'phone' => $user->phone,
-                        'alamat' => $user->alamat,
-                        'status' => $user->status,
+                        'tanggal_lahir' => $user->tanggal_lahir,
+                        'foto_profil' => $user->foto_profil,
                     ],
                 ],
             ]);
+
         } catch (\Exception $e) {
             return response()->json([
                 'status' => 'error',
@@ -293,105 +283,111 @@ class AuthController extends Controller
     }
 
     /**
-     * Get all users (Admin only)
+     * Get all users (Admin/HRD only)
      */
     public function getAllUsers(Request $request)
     {
         try {
             $user = $request->user();
             
-            if ($user->role !== 'admin') {
+            // Check if user has admin privileges
+            if (!$user->hasAdminPrivileges()) {
                 return response()->json([
                     'status' => 'error',
-                    'message' => 'Unauthorized. Only admin can view all users.',
+                    'message' => 'Unauthorized. Only admin or HRD can view all users.',
                 ], 403);
             }
 
-            // Sample user data
-            $users = [
-                [
-                    'id' => 1,
-                    'username' => 'admin',
-                    'email' => 'admin@klinik.com',
-                    'nama' => 'Administrator',
-                    'role' => 'admin',
-                    'status' => 'aktif',
-                    'phone' => '+6281234567890',
-                    'created_at' => '2024-01-01 00:00:00'
-                ],
-                [
-                    'id' => 2,
-                    'username' => 'hrd_user',
-                    'email' => 'hrd@klinik.com',
-                    'nama' => 'HRD Manager',
-                    'role' => 'hrd',
-                    'status' => 'aktif',
-                    'phone' => '+6281234567891',
-                    'created_at' => '2024-01-15 10:00:00'
-                ],
-                [
-                    'id' => 3,
-                    'username' => 'frontoffice',
-                    'email' => 'frontoffice@klinik.com',
-                    'nama' => 'Front Office Staff',
-                    'role' => 'front_office',
-                    'status' => 'aktif',
-                    'phone' => '+6281234567892',
-                    'created_at' => '2024-02-01 09:00:00'
-                ],
-                [
-                    'id' => 4,
-                    'username' => 'kasir',
-                    'email' => 'kasir@klinik.com',
-                    'nama' => 'Kasir',
-                    'role' => 'kasir',
-                    'status' => 'aktif',
-                    'phone' => '+6281234567893',
-                    'created_at' => '2024-02-15 08:30:00'
-                ],
-                [
-                    'id' => 5,
-                    'username' => 'dokter',
-                    'email' => 'dokter@klinik.com',
-                    'nama' => 'Dr. Smith',
-                    'role' => 'dokter',
-                    'status' => 'aktif',
-                    'phone' => '+6281234567894',
-                    'created_at' => '2024-03-01 07:00:00'
-                ],
-                [
-                    'id' => 6,
-                    'username' => 'beautician',
-                    'email' => 'beautician@klinik.com',
-                    'nama' => 'Beauty Expert',
-                    'role' => 'beautician',
-                    'status' => 'aktif',
-                    'phone' => '+6281234567895',
-                    'created_at' => '2024-03-15 08:00:00'
-                ],
-                [
-                    'id' => 7,
-                    'username' => 'customer',
-                    'email' => 'customer@klinik.com',
-                    'nama' => 'John Customer',
-                    'role' => 'pelanggan',
-                    'status' => 'aktif',
-                    'phone' => '+6281234567896',
-                    'created_at' => '2024-04-01 10:30:00'
-                ]
-            ];
+            $query = User::query();
+
+            // Add filters if provided
+            if ($request->filled('role')) {
+                $query->where('role', $request->role);
+            }
+
+            if ($request->filled('search')) {
+                $search = $request->search;
+                $query->where(function($q) use ($search) {
+                    $q->where('nama_user', 'like', "%{$search}%")
+                      ->orWhere('email', 'like', "%{$search}%")
+                      ->orWhere('no_telp', 'like', "%{$search}%");
+                });
+            }
+
+            // Pagination
+            $perPage = $request->get('per_page', 15);
+            $users = $query->orderBy('created_at', 'desc')->paginate($perPage);
 
             return response()->json([
                 'status' => 'success',
                 'message' => 'Users retrieved successfully',
-                'data' => $users,
+                'data' => [
+                    'users' => $users->items(),
+                    'pagination' => [
+                        'current_page' => $users->currentPage(),
+                        'total_pages' => $users->lastPage(),
+                        'per_page' => $users->perPage(),
+                        'total' => $users->total(),
+                    ]
+                ],
             ]);
 
         } catch (\Exception $e) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'Failed to retrieve users',
-                'error' => $e->getMessage(),
+                'message' => 'Failed to retrieve users: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Get user by ID (Admin/HRD only)
+     */
+    public function getUserById(Request $request, $id)
+    {
+        try {
+            $user = $request->user();
+            
+            // Check if user has admin privileges
+            if (!$user->hasAdminPrivileges()) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Unauthorized. Only admin or HRD can view user details.',
+                ], 403);
+            }
+
+            // Find user by ID
+            $targetUser = User::find($id);
+
+            if (!$targetUser) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'User not found',
+                ], 404);
+            }
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'User retrieved successfully',
+                'data' => [
+                    'user' => [
+                        'id_user' => $targetUser->id_user,
+                        'nama_user' => $targetUser->nama_user,
+                        'email' => $targetUser->email,
+                        'no_telp' => $targetUser->no_telp,
+                        'role' => $targetUser->role,
+                        'tanggal_lahir' => $targetUser->tanggal_lahir,
+                        'foto_profil' => $targetUser->foto_profil,
+                        'created_at' => $targetUser->created_at,
+                        'updated_at' => $targetUser->updated_at,
+                    ]
+                ],
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to retrieve user: ' . $e->getMessage(),
             ], 500);
         }
     }

@@ -34,7 +34,7 @@ class HRTestDataSeeder extends Seeder
             'email' => 'hrd@klinik.com',
             'tanggal_lahir' => '1985-05-15',
             'password' => Hash::make('password123'),
-            'role' => 'front office',
+            'role' => 'hrd',
         ]);
 
         // Create employee user

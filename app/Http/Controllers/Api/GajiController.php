@@ -9,6 +9,7 @@ use App\Models\Absensi;
 use App\Traits\ApiResponseTrait;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use App\Models\BookingTreatment;
 use Carbon\Carbon;
 
 class GajiController extends Controller
@@ -22,8 +23,8 @@ class GajiController extends Controller
         $user = $request->user();
         $query = Gaji::with(['pegawai.user', 'pegawai.posisi']);
         
-        // Filter by user for non-admin roles
-        if (!$user->isAdmin() && !$user->isHrd()) {
+        // Filter by user for non-admin/HRD roles
+        if (!$user->hasAdminPrivileges()) {
             $pegawai = $user->pegawai;
             if ($pegawai) {
                 $query->where('id_pegawai', $pegawai->id_pegawai);
@@ -49,7 +50,7 @@ class GajiController extends Controller
         }
         
         // Filter by pegawai
-        if (($user->isAdmin() || $user->isHrd()) && $request->filled('id_pegawai')) {
+        if ($user->hasAdminPrivileges() && $request->filled('id_pegawai')) {
             $query->where('id_pegawai', $request->id_pegawai);
         }
         
@@ -142,7 +143,7 @@ class GajiController extends Controller
         $user = request()->user();
         
         // Check if user is allowed to view this gaji
-        if (!$user->isAdmin() && !$user->isHrd() && $user->pegawai && $user->pegawai->id_pegawai !== $gaji->id_pegawai) {
+        if (!$user->hasAdminPrivileges() && $user->pegawai && $user->pegawai->id_pegawai !== $gaji->id_pegawai) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Anda tidak memiliki akses untuk melihat data gaji ini'
@@ -296,14 +297,24 @@ class GajiController extends Controller
                 continue;
             }
             
+            // Get gaji pokok from posisi
             $gajiPokok = $posisi->gaji_pokok;
             
-            // Calculate bonus (persentase dari gaji pokok)
-            $bonusPercentage = $posisi->persen_bonus / 100;
-            $gajiBonus = $gajiPokok * $bonusPercentage;
+            // Calculate bonus based on percentage from posisi * total booking treatment prices for the month
+            $totalBookingTreatment = BookingTreatment::where('status_booking_treatment', 'Selesai')
+                                                   ->whereYear('waktu_treatment', $tahun)
+                                                   ->whereMonth('waktu_treatment', $bulan)
+                                                   ->where(function($query) use ($p) {
+                                                       $query->where('id_dokter', $p->id_pegawai)
+                                                             ->orWhere('id_beautician', $p->id_pegawai);
+                                                   })
+                                                   ->sum('harga_total');
             
-            // Calculate kehadiran (proporsi dari gaji pokok berdasarkan kehadiran)
-            $gajiKehadiran = $kehadiran > 0 ? ($kehadiran / $totalHariKerja) * ($gajiPokok * 0.1) : 0;
+            $bonusPercentage = $posisi->persen_bonus / 100;
+            $gajiBonus = $totalBookingTreatment * $bonusPercentage;
+            
+            // Calculate attendance salary: 100,000 * number of attendances in the month
+            $gajiKehadiran = $kehadiran * 100000;
             
             // Total
             $gajiTotal = $gajiPokok + $gajiBonus + $gajiKehadiran;
@@ -410,14 +421,24 @@ class GajiController extends Controller
                 $calculation['error'] = "Posisi tidak ditemukan";
                 $calculation['gaji'] = null;
             } else {
+                // Get gaji pokok from posisi
                 $gajiPokok = $posisi->gaji_pokok;
                 
-                // Calculate bonus (persentase dari gaji pokok)
-                $bonusPercentage = $posisi->persen_bonus / 100;
-                $gajiBonus = $gajiPokok * $bonusPercentage;
+                // Calculate bonus based on percentage from posisi * total booking treatment prices for the month
+                $totalBookingTreatment = BookingTreatment::where('status_booking_treatment', 'Selesai')
+                                                       ->whereYear('waktu_treatment', $tahun)
+                                                       ->whereMonth('waktu_treatment', $bulan)
+                                                       ->where(function($query) use ($p) {
+                                                           $query->where('id_dokter', $p->id_pegawai)
+                                                                 ->orWhere('id_beautician', $p->id_pegawai);
+                                                       })
+                                                       ->sum('harga_total');
                 
-                // Calculate kehadiran bonus (proporsi dari gaji pokok berdasarkan kehadiran)
-                $gajiKehadiran = $kehadiran > 0 ? ($kehadiran / $totalHariKerja) * ($gajiPokok * 0.1) : 0;
+                $bonusPercentage = $posisi->persen_bonus / 100;
+                $gajiBonus = $totalBookingTreatment * $bonusPercentage;
+                
+                // Calculate attendance salary: 100,000 * number of attendances in the month
+                $gajiKehadiran = $kehadiran * 100000;
                 
                 // Total
                 $gajiTotal = $gajiPokok + $gajiBonus + $gajiKehadiran;
@@ -428,6 +449,9 @@ class GajiController extends Controller
                     'gaji_kehadiran' => (float) $gajiKehadiran,
                     'gaji_total' => (float) $gajiTotal,
                     'bonus_percentage' => (float) $posisi->persen_bonus,
+                    'total_booking_treatment' => (float) $totalBookingTreatment,
+                    'attendance_days' => $kehadiran,
+                    'attendance_rate_per_day' => 100000,
                 ];
                 
                 $totalGaji += $gajiTotal;
@@ -452,6 +476,63 @@ class GajiController extends Controller
                 'calculations' => $calculations,
             ]
         ]);
+    }
+
+    /**
+     * Get salary records for a specific employee
+     */
+    public function getByPegawai(Request $request, string $pegawaiId)
+    {
+        try {
+            $user = $request->user();
+            
+            // Check if user has permission to view this pegawai's data
+            if (!$user->hasAdminPrivileges()) {
+                $userPegawai = $user->pegawai;
+                if (!$userPegawai || $userPegawai->id_pegawai != $pegawaiId) {
+                    return $this->errorResponse('Unauthorized to view this employee data', [], 403);
+                }
+            }
+
+            // Check if pegawai exists
+            $pegawai = Pegawai::with(['user', 'posisi'])->find($pegawaiId);
+            if (!$pegawai) {
+                return $this->errorResponse('Pegawai tidak ditemukan', [], 404);
+            }
+
+            $query = Gaji::with(['pegawai.user', 'pegawai.posisi'])
+                         ->where('id_pegawai', $pegawaiId);
+
+            // Filter by year and month if provided
+            if ($request->filled('tahun')) {
+                $query->where('periode_tahun', $request->tahun);
+            }
+            
+            if ($request->filled('bulan')) {
+                $query->where('periode_bulan', $request->bulan);
+            }
+
+            // Order by most recent first
+            $gaji = $query->orderBy('periode_tahun', 'desc')
+                         ->orderBy('periode_bulan', 'desc')
+                         ->get();
+
+            return $this->successResponse(
+                [
+                    'pegawai' => [
+                        'id' => $pegawai->id_pegawai,
+                        'nama' => $pegawai->user->name,
+                        'email' => $pegawai->user->email,
+                        'posisi' => $pegawai->posisi->nama_posisi ?? null,
+                    ],
+                    'gaji_records' => $gaji
+                ],
+                'Data gaji pegawai berhasil diambil'
+            );
+
+        } catch (\Exception $e) {
+            return $this->errorResponse('Gagal mengambil data gaji pegawai: ' . $e->getMessage(), [], 500);
+        }
     }
 
     /**
@@ -507,5 +588,19 @@ class GajiController extends Controller
             'status' => 'success',
             'data' => $statistics
         ]);
+    }
+
+    /**
+     * Automatically generate salary for current month for all active employees
+     */
+    public function autoGenerateMonthlyGaji()
+    {
+        $currentMonth = now()->month;
+        $currentYear = now()->year;
+        
+        return $this->generateGaji(new Request([
+            'periode_bulan' => $currentMonth,
+            'periode_tahun' => $currentYear
+        ]));
     }
 }

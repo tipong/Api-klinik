@@ -105,7 +105,15 @@ class User extends Authenticatable
      */
     public function isHrd()
     {
-        return $this->role === 'admin'; // Assuming admin has HRD privileges
+        return $this->role === 'hrd';
+    }
+
+    /**
+     * Check if user has admin privileges (admin or HRD)
+     */
+    public function hasAdminPrivileges()
+    {
+        return in_array($this->role, ['admin', 'hrd']);
     }
 
     /**
@@ -114,6 +122,14 @@ class User extends Authenticatable
     public function isEmployee()
     {
         return in_array($this->role, ['front office', 'kasir', 'dokter', 'beautician']);
+    }
+
+    /**
+     * Get the name attribute (alias for nama_user)
+     */
+    public function getNameAttribute()
+    {
+        return $this->nama_user;
     }
 
     /**

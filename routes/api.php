@@ -54,10 +54,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/dashboard/stats', [AuthController::class, 'getDashboardStats']);
 
     // Admin and HRD routes (Full Management Access)
-    Route::middleware('role:admin,hrd')->group(function () {
+    Route::middleware('admin')->group(function () {
+        // User Management (Admin and HRD access)
+        Route::get('/users', [AuthController::class, 'getAllUsers']);
+        Route::get('/user/{id}', [AuthController::class, 'getUserById']);
+        
         // User Management (Admin only for sensitive operations)
         Route::middleware('role:admin')->group(function () {
-            Route::get('/users', [AuthController::class, 'getAllUsers']);
             Route::put('/users/{id}/status', [AuthController::class, 'updateUserStatus']);
             Route::delete('/users/{id}', [AuthController::class, 'deleteUser']);
         });
@@ -217,7 +220,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // ==============================================
     
     // User Management Routes
-    Route::prefix('users')->group(function () {
+    Route::prefix('users')->middleware('admin')->group(function () {
         Route::get('/', [AuthController::class, 'getAllUsers']);
         Route::get('/{id}', [AuthController::class, 'getUser']);
         Route::put('/{id}', [AuthController::class, 'updateUser']);
@@ -226,7 +229,7 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     // Pegawai Management Routes
-    Route::prefix('pegawai')->group(function () {
+    Route::prefix('pegawai')->middleware('admin')->group(function () {
         Route::get('/', [PegawaiController::class, 'index']);
         Route::post('/', [PegawaiController::class, 'store']);
         Route::get('/{id}', [PegawaiController::class, 'show']);
@@ -267,6 +270,7 @@ Route::middleware('auth:sanctum')->group(function () {
         
         // New salary calculation endpoints
         Route::post('/generate', [GajiController::class, 'generateGaji']);
+        Route::post('/auto-generate-monthly', [GajiController::class, 'autoGenerateMonthlyGaji']);
         Route::get('/preview', [GajiController::class, 'previewCalculation']);
         Route::get('/statistics', [GajiController::class, 'statistics']);
     });
