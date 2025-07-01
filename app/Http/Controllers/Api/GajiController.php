@@ -6,12 +6,14 @@ use App\Http\Controllers\Controller;
 use App\Models\Gaji;
 use App\Models\Pegawai;
 use App\Models\Absensi;
+use App\Traits\ApiResponseTrait;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Carbon\Carbon;
 
 class GajiController extends Controller
 {
+    use ApiResponseTrait;
     /**
      * Display a listing of the resource.
      */
@@ -325,6 +327,185 @@ class GajiController extends Controller
             'status' => 'success',
             'message' => "Berhasil generate {$count} data gaji",
             'errors' => $errors
+        ]);
+    }
+
+    /**
+     * Calculate and preview salary for a specific period
+     */
+    public function previewCalculation(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'periode_bulan' => 'required|integer|between:1,12',
+            'periode_tahun' => 'required|integer|min:2000',
+            'id_pegawai' => 'nullable|exists:tb_pegawai,id_pegawai',
+        ]);
+        
+        if ($validator->fails()) {
+            return $this->validationErrorResponse($validator->errors());
+        }
+        
+        $bulan = $request->periode_bulan;
+        $tahun = $request->periode_tahun;
+        
+        // Get pegawai based on filter
+        $query = Pegawai::with(['posisi', 'user'])->whereNull('tanggal_keluar')
+                       ->orWhere(function($query) use ($bulan, $tahun) {
+                           $query->whereYear('tanggal_keluar', '>=', $tahun)
+                                 ->whereMonth('tanggal_keluar', '>=', $bulan);
+                       });
+        
+        if ($request->filled('id_pegawai')) {
+            $query->where('id_pegawai', $request->id_pegawai);
+        }
+        
+        $pegawai = $query->get();
+        
+        $startDate = Carbon::createFromDate($tahun, $bulan, 1);
+        $endDate = $startDate->copy()->endOfMonth();
+        
+        $calculations = [];
+        $totalGaji = 0;
+        
+        foreach ($pegawai as $p) {
+            // Check if gaji already exists
+            $existingGaji = Gaji::where('id_pegawai', $p->id_pegawai)
+                              ->where('periode_bulan', $bulan)
+                              ->where('periode_tahun', $tahun)
+                              ->first();
+            
+            // Calculate kehadiran
+            $totalHariKerja = $startDate->diffInDaysFiltered(function(Carbon $date) {
+                return $date->isWeekday();
+            }, $endDate);
+            
+            $kehadiran = Absensi::where('id_pegawai', $p->id_pegawai)
+                               ->whereBetween('tanggal', [$startDate->format('Y-m-d'), $endDate->format('Y-m-d')])
+                               ->count();
+            
+            // Get posisi and calculate gaji
+            $posisi = $p->posisi;
+            
+            $calculation = [
+                'pegawai' => [
+                    'id_pegawai' => $p->id_pegawai,
+                    'nama_lengkap' => $p->nama_lengkap,
+                    'nip' => $p->NIP,
+                    'posisi' => $posisi ? $posisi->nama_posisi : null,
+                ],
+                'periode' => [
+                    'bulan' => $bulan,
+                    'tahun' => $tahun,
+                    'periode_formatted' => Carbon::createFromDate($tahun, $bulan, 1)->format('F Y'),
+                ],
+                'kehadiran' => [
+                    'total_hari_kerja' => $totalHariKerja,
+                    'hadir' => $kehadiran,
+                    'persentase_kehadiran' => $totalHariKerja > 0 ? round(($kehadiran / $totalHariKerja) * 100, 2) : 0,
+                ],
+                'already_exists' => (bool) $existingGaji,
+            ];
+            
+            if (!$posisi) {
+                $calculation['error'] = "Posisi tidak ditemukan";
+                $calculation['gaji'] = null;
+            } else {
+                $gajiPokok = $posisi->gaji_pokok;
+                
+                // Calculate bonus (persentase dari gaji pokok)
+                $bonusPercentage = $posisi->persen_bonus / 100;
+                $gajiBonus = $gajiPokok * $bonusPercentage;
+                
+                // Calculate kehadiran bonus (proporsi dari gaji pokok berdasarkan kehadiran)
+                $gajiKehadiran = $kehadiran > 0 ? ($kehadiran / $totalHariKerja) * ($gajiPokok * 0.1) : 0;
+                
+                // Total
+                $gajiTotal = $gajiPokok + $gajiBonus + $gajiKehadiran;
+                
+                $calculation['gaji'] = [
+                    'gaji_pokok' => (float) $gajiPokok,
+                    'gaji_bonus' => (float) $gajiBonus,
+                    'gaji_kehadiran' => (float) $gajiKehadiran,
+                    'gaji_total' => (float) $gajiTotal,
+                    'bonus_percentage' => (float) $posisi->persen_bonus,
+                ];
+                
+                $totalGaji += $gajiTotal;
+            }
+            
+            $calculations[] = $calculation;
+        }
+        
+        return response()->json([
+            'status' => 'success',
+            'data' => [
+                'periode' => [
+                    'bulan' => $bulan,
+                    'tahun' => $tahun,
+                    'periode_formatted' => Carbon::createFromDate($tahun, $bulan, 1)->format('F Y'),
+                ],
+                'summary' => [
+                    'total_pegawai' => count($calculations),
+                    'total_gaji_keseluruhan' => (float) $totalGaji,
+                    'rata_rata_gaji' => count($calculations) > 0 ? (float) round($totalGaji / count($calculations), 2) : 0,
+                ],
+                'calculations' => $calculations,
+            ]
+        ]);
+    }
+
+    /**
+     * Get salary statistics for a period
+     */
+    public function statistics(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'periode_bulan' => 'nullable|integer|between:1,12',
+            'periode_tahun' => 'nullable|integer|min:2000',
+        ]);
+        
+        if ($validator->fails()) {
+            return $this->validationErrorResponse($validator->errors());
+        }
+        
+        $query = Gaji::with(['pegawai.posisi']);
+        
+        if ($request->filled('periode_bulan')) {
+            $query->where('periode_bulan', $request->periode_bulan);
+        }
+        
+        if ($request->filled('periode_tahun')) {
+            $query->where('periode_tahun', $request->periode_tahun);
+        } else {
+            // Default to current year
+            $query->where('periode_tahun', now()->year);
+        }
+        
+        $gaji = $query->get();
+        
+        $statistics = [
+            'total_pegawai' => $gaji->count(),
+            'total_gaji_keseluruhan' => (float) $gaji->sum('gaji_total'),
+            'rata_rata_gaji' => (float) $gaji->avg('gaji_total'),
+            'gaji_tertinggi' => (float) $gaji->max('gaji_total'),
+            'gaji_terendah' => (float) $gaji->min('gaji_total'),
+            'status_pembayaran' => [
+                'terbayar' => $gaji->where('status', 'Terbayar')->count(),
+                'belum_terbayar' => $gaji->where('status', 'Belum Terbayar')->count(),
+            ],
+            'by_posisi' => $gaji->groupBy('pegawai.posisi.nama_posisi')->map(function ($items, $posisi) {
+                return [
+                    'posisi' => $posisi,
+                    'jumlah_pegawai' => $items->count(),
+                    'total_gaji' => (float) $items->sum('gaji_total'),
+                    'rata_rata_gaji' => (float) $items->avg('gaji_total'),
+                ];
+            })->values(),
+        ];
+        
+        return response()->json([
+            'status' => 'success',
+            'data' => $statistics
         ]);
     }
 }

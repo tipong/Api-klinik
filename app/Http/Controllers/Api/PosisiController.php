@@ -4,11 +4,13 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Posisi;
+use App\Traits\ApiResponseTrait;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
 class PosisiController extends Controller
 {
+    use ApiResponseTrait;
     /**
      * Display a listing of the resource.
      */
@@ -150,5 +152,43 @@ class PosisiController extends Controller
             'status' => 'success',
             'message' => 'Posisi berhasil dihapus'
         ]);
+    }
+
+    /**
+     * Get position statistics
+     */
+    public function statistics(Request $request)
+    {
+        try {
+            $statistics = Posisi::with(['pegawai' => function ($query) {
+                $query->whereNull('tanggal_keluar'); // Only active employees
+            }])->get()->map(function ($posisi) {
+                return [
+                    'id_posisi' => $posisi->id_posisi,
+                    'nama_posisi' => $posisi->nama_posisi,
+                    'gaji_pokok' => (float) $posisi->gaji_pokok,
+                    'persen_bonus' => (float) $posisi->persen_bonus,
+                    'jumlah_pegawai_aktif' => $posisi->pegawai->count(),
+                    'total_gaji_pokok_bulanan' => (float) ($posisi->gaji_pokok * $posisi->pegawai->count()),
+                ];
+            });
+
+            $summary = [
+                'total_posisi' => $statistics->count(),
+                'total_pegawai_aktif' => $statistics->sum('jumlah_pegawai_aktif'),
+                'total_gaji_pokok_bulanan' => $statistics->sum('total_gaji_pokok_bulanan'),
+                'rata_rata_gaji_pokok' => $statistics->avg('gaji_pokok'),
+                'gaji_pokok_tertinggi' => $statistics->max('gaji_pokok'),
+                'gaji_pokok_terendah' => $statistics->min('gaji_pokok'),
+            ];
+
+            return $this->successResponse([
+                'summary' => $summary,
+                'by_posisi' => $statistics,
+            ], 'Statistik posisi berhasil diambil');
+
+        } catch (\Exception $e) {
+            return $this->serverErrorResponse('Gagal mengambil statistik posisi: ' . $e->getMessage());
+        }
     }
 }

@@ -5,12 +5,14 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Absensi;
 use App\Models\Pegawai;
+use App\Traits\ApiResponseTrait;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Carbon\Carbon;
 
 class AbsensiController extends Controller
 {
+    use ApiResponseTrait;
     // Office coordinates (sesuaikan dengan lokasi kantor klinik)
     const OFFICE_LATITUDE = -8.781952;
     const OFFICE_LONGITUDE = 115.179793;
@@ -62,7 +64,7 @@ class AbsensiController extends Controller
         if (!$user->isAdmin() && !$user->isHrd()) {
             $pegawai = $user->pegawai;
             if ($pegawai) {
-                $query->where('id_pegawai', $pegawai->id_pegawai);
+                $query->where('pegawai_id', $pegawai->id);
             } else {
                 // If user has no pegawai record, show empty result
                 $query->whereRaw('1 = 0');
@@ -93,7 +95,7 @@ class AbsensiController extends Controller
         if (($user->isAdmin() || $user->isHrd()) && $request->filled('id_user')) {
             $selectedUser = User::find($request->id_user);
             if ($selectedUser && $selectedUser->pegawai) {
-                $query->where('id_pegawai', $selectedUser->pegawai->id_pegawai);
+                $query->where('pegawai_id', $selectedUser->pegawai->id);
             }
         }
         
@@ -123,7 +125,7 @@ class AbsensiController extends Controller
         $today = Carbon::today();
         
         // Check if user already has attendance for today
-        $existingAbsensi = Absensi::where('id_pegawai', $pegawai->id_pegawai)
+        $existingAbsensi = Absensi::where('pegawai_id', $pegawai->id)
                                   ->whereDate('tanggal', $today)
                                   ->first();
         
@@ -135,10 +137,8 @@ class AbsensiController extends Controller
         }
         
         $validator = Validator::make($request->all(), [
-            'latitude' => 'required|numeric|between:-90,90',
-            'longitude' => 'required|numeric|between:-180,180',
-            'alamat_masuk' => 'required|string|max:500',
-            'catatan' => 'nullable|string|max:255',
+            'lokasi_masuk' => 'nullable|string|max:500',
+            'keterangan' => 'nullable|string|max:255',
         ]);
         
         if ($validator->fails()) {
@@ -149,24 +149,15 @@ class AbsensiController extends Controller
             ], 422);
         }
         
-        // Check if location is within office radius
-        if (!$this->isWithinOfficeRadius($request->latitude, $request->longitude)) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Anda berada di luar radius kantor. Silakan absen dari kantor atau hubungi HRD untuk izin absen dari luar kantor.'
-            ], 400);
-        }
-        
         $checkInTime = now();
         
         $absensi = Absensi::create([
-            'id_pegawai' => $pegawai->id_pegawai,
+            'pegawai_id' => $pegawai->id,
             'tanggal' => $today,
             'jam_masuk' => $checkInTime,
-            'latitude_masuk' => $request->latitude,
-            'longitude_masuk' => $request->longitude,
-            'alamat_masuk' => $request->alamat_masuk,
-            'catatan' => $request->catatan,
+            'lokasi_masuk' => $request->lokasi_masuk ?? 'Kantor',
+            'keterangan' => $request->keterangan,
+            'status' => 'Hadir',
         ]);
         
         return response()->json([
@@ -193,7 +184,7 @@ class AbsensiController extends Controller
         $user = request()->user();
         
         // Check if user is allowed to view this attendance
-        if (!$user->isAdmin() && !$user->isHrd() && $user->pegawai && $user->pegawai->id_pegawai !== $absensi->id_pegawai) {
+        if (!$user->isAdmin() && !$user->isHrd() && $user->pegawai && $user->pegawai->id !== $absensi->pegawai_id) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Anda tidak memiliki akses untuk melihat absensi ini'
@@ -231,7 +222,7 @@ class AbsensiController extends Controller
         }
         
         // Check if user is allowed to checkout for this attendance
-        if (!$user->isAdmin() && !$user->isHrd() && $pegawai->id_pegawai !== $absensi->id_pegawai) {
+        if (!$user->isAdmin() && !$user->isHrd() && $pegawai->id !== $absensi->pegawai_id) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Anda tidak memiliki akses untuk melakukan check-out pada absensi ini'
@@ -247,9 +238,8 @@ class AbsensiController extends Controller
         }
         
         $validator = Validator::make($request->all(), [
-            'latitude' => 'required|numeric|between:-90,90',
-            'longitude' => 'required|numeric|between:-180,180',
-            'alamat_keluar' => 'required|string|max:500',
+            'lokasi_keluar' => 'nullable|string|max:500',
+            'keterangan' => 'nullable|string|max:1000',
         ]);
         
         if ($validator->fails()) {
@@ -260,21 +250,12 @@ class AbsensiController extends Controller
             ], 422);
         }
         
-        // Check if location is within office radius
-        if (!$this->isWithinOfficeRadius($request->latitude, $request->longitude)) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Anda berada di luar radius kantor. Silakan absen dari kantor atau hubungi HRD untuk izin absen dari luar kantor.'
-            ], 400);
-        }
-        
         $checkOutTime = now();
         
         $absensi->update([
             'jam_keluar' => $checkOutTime,
-            'latitude_keluar' => $request->latitude,
-            'longitude_keluar' => $request->longitude,
-            'alamat_keluar' => $request->alamat_keluar,
+            'lokasi_keluar' => $request->lokasi_keluar ?? 'Kantor',
+            'keterangan' => $request->keterangan,
         ]);
         
         return response()->json([

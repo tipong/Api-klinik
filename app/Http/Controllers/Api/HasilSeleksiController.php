@@ -6,11 +6,13 @@ use App\Http\Controllers\Controller;
 use App\Models\HasilSeleksi;
 use App\Models\User;
 use App\Models\LowonganPekerjaan;
+use App\Traits\ApiResponseTrait;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
 class HasilSeleksiController extends Controller
 {
+    use ApiResponseTrait;
     /**
      * Display a listing of the resource.
      */
@@ -41,10 +43,7 @@ class HasilSeleksiController extends Controller
         
         $hasilSeleksi = $query->orderBy('created_at', 'desc')->paginate(15);
         
-        return response()->json([
-            'status' => 'success',
-            'data' => $hasilSeleksi
-        ]);
+        return $this->successResponse($hasilSeleksi, 'Data hasil seleksi berhasil diambil');
     }
 
     /**
@@ -52,40 +51,38 @@ class HasilSeleksiController extends Controller
      */
     public function store(Request $request)
     {
-        $validator = Validator::make($request->all(), [
-            'id_user' => 'required|exists:tb_user,id_user',
-            'id_lowongan_pekerjaan' => 'required|exists:tb_lowongan_pekerjaan,id_lowongan_pekerjaan',
-            'status' => 'required|in:diterima,ditolak,pending',
-            'catatan' => 'nullable|string',
-        ]);
-        
-        if ($validator->fails()) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Validation error',
-                'errors' => $validator->errors()
-            ], 422);
+        try {
+            $validator = Validator::make($request->all(), [
+                'id_user' => 'required|exists:tb_user,id_user',
+                'id_lowongan_pekerjaan' => 'required|exists:tb_lowongan_pekerjaan,id_lowongan_pekerjaan',
+                'status' => 'required|in:pending,diterima,ditolak',
+                'catatan' => 'nullable|string|max:500',
+            ]);
+            
+            if ($validator->fails()) {
+                return $this->validationErrorResponse($validator->errors());
+            }
+            
+            // Check if hasil seleksi for this user and lowongan already exists
+            $existingHasil = HasilSeleksi::where('id_user', $request->id_user)
+                                      ->where('id_lowongan_pekerjaan', $request->id_lowongan_pekerjaan)
+                                      ->first();
+                                      
+            if ($existingHasil) {
+                return $this->errorResponse('Hasil seleksi untuk user dan lowongan ini sudah ada', 400);
+            }
+            
+            $hasilSeleksi = HasilSeleksi::create($request->all());
+            
+            return $this->successResponse(
+                $hasilSeleksi->load(['user', 'lowonganPekerjaan.posisi']),
+                'Hasil seleksi berhasil ditambahkan',
+                201
+            );
+            
+        } catch (\Exception $e) {
+            return $this->serverErrorResponse('Gagal menambahkan hasil seleksi: ' . $e->getMessage());
         }
-        
-        // Check if result already exists
-        $existingHasil = HasilSeleksi::where('id_user', $request->id_user)
-                                    ->where('id_lowongan_pekerjaan', $request->id_lowongan_pekerjaan)
-                                    ->first();
-                                    
-        if ($existingHasil) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Hasil seleksi untuk user dan lowongan ini sudah ada'
-            ], 400);
-        }
-        
-        $hasilSeleksi = HasilSeleksi::create($request->all());
-        
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Hasil seleksi berhasil ditambahkan',
-            'data' => $hasilSeleksi->load(['user', 'lowonganPekerjaan.posisi'])
-        ], 201);
     }
 
     /**

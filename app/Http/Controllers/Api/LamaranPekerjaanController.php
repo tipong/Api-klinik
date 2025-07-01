@@ -6,12 +6,14 @@ use App\Http\Controllers\Controller;
 use App\Models\LamaranPekerjaan;
 use App\Models\LowonganPekerjaan;
 use App\Models\User;
+use App\Traits\ApiResponseTrait;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Storage;
 
 class LamaranPekerjaanController extends Controller
 {
+    use ApiResponseTrait;
     /**
      * Display a listing of the resource.
      */

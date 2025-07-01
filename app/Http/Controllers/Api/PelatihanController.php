@@ -5,11 +5,13 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Pelatihan;
 use App\Models\Pegawai;
+use App\Traits\ApiResponseTrait;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
 class PelatihanController extends Controller
 {
+    use ApiResponseTrait;
     /**
      * Display a listing of the resource.
      *

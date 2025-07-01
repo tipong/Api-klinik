@@ -24,18 +24,20 @@ class RoleMiddleware
             ], 401);
         }
 
+        $user = $request->user();
+
         // Check if user has required role
-        if (!in_array($request->user()->role, $roles)) {
+        if (!in_array($user->role, $roles)) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Forbidden. You do not have permission to access this resource.',
                 'required_roles' => $roles,
-                'user_role' => $request->user()->role,
+                'user_role' => $user->role,
             ], 403);
         }
 
         // Check if user is active
-        if (!$request->user()->is_active) {
+        if ($user->status !== 'aktif') {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Your account is inactive. Please contact administrator.',

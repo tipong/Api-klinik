@@ -4,7 +4,6 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Carbon\Carbon;
 
 class Pegawai extends Model
 {
@@ -89,31 +88,27 @@ class Pegawai extends Model
     }
 
     /**
-     * Calculate the age of the pegawai.
-     */
-    public function getUmurAttribute()
-    {
-        return $this->tanggal_lahir ? Carbon::parse($this->tanggal_lahir)->age : null;
-    }
-
-    /**
-     * Calculate the masa kerja of the pegawai in months.
-     */
-    public function getMasaKerjaAttribute()
-    {
-        if (!$this->tanggal_masuk) {
-            return 0;
-        }
-
-        $endDate = $this->tanggal_keluar ?: Carbon::now();
-        return Carbon::parse($this->tanggal_masuk)->diffInMonths($endDate);
-    }
-
-    /**
-     * Check if the pegawai is still active.
+     * Check if pegawai is active (has not left yet).
      */
     public function isActive()
     {
-        return is_null($this->tanggal_keluar);
+        return is_null($this->tanggal_keluar) || $this->tanggal_keluar->isFuture();
+    }
+
+    /**
+     * Get full name.
+     */
+    public function getFullNameAttribute()
+    {
+        return $this->nama_lengkap;
+    }
+
+    /**
+     * Get employment duration.
+     */
+    public function getEmploymentDurationAttribute()
+    {
+        $endDate = $this->tanggal_keluar ?? now();
+        return $this->tanggal_masuk->diffInDays($endDate);
     }
 }
