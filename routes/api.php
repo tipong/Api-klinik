@@ -103,9 +103,6 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::apiResource('hasil-seleksi', HasilSeleksiController::class);
         Route::get('/lamaran/{id}/hasil', [HasilSeleksiController::class, 'getByLamaran']);
         
-        // Pelatihan Management
-        Route::apiResource('pelatihan', PelatihanController::class);
-        
         // Gaji Management
         Route::apiResource('gaji', GajiController::class);
     });
@@ -213,6 +210,19 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/{id}', [AbsensiController::class, 'show']);
         Route::get('/user/today', [AbsensiController::class, 'getUserTodayAttendance']);
         Route::get('/user/history', [AbsensiController::class, 'getUserAttendanceHistory']);
+    });
+
+    // Pelatihan routes - accessible by all staff roles (admin, hrd, front_office, kasir, dokter, beautician)
+    Route::middleware('role:admin,hrd,front_office,kasir,dokter,beautician')->prefix('pelatihan')->group(function () {
+        Route::get('/', [PelatihanController::class, 'index']);
+        Route::get('/{id}', [PelatihanController::class, 'show']);
+        
+        // Admin and HRD can create, update, delete pelatihan
+        Route::middleware('role:admin,hrd')->group(function () {
+            Route::post('/', [PelatihanController::class, 'store']);
+            Route::put('/{id}', [PelatihanController::class, 'update']);
+            Route::delete('/{id}', [PelatihanController::class, 'destroy']);
+        });
     });
 
     // ==============================================
@@ -333,21 +343,6 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::delete('/{id}', [HasilSeleksiController::class, 'destroy']);
         Route::get('/lowongan/{id}', [HasilSeleksiController::class, 'getByLowongan']);
         Route::get('/user/{id}', [HasilSeleksiController::class, 'getByUser']);
-    });
-
-    // Pelatihan Management Routes
-    Route::prefix('pelatihan')->group(function () {
-        Route::get('/', [PelatihanController::class, 'index']);
-        Route::post('/', [PelatihanController::class, 'store']);
-        Route::get('/{id}', [PelatihanController::class, 'show']);
-        Route::put('/{id}', [PelatihanController::class, 'update']);
-        Route::delete('/{id}', [PelatihanController::class, 'destroy']);
-        Route::get('/active', [PelatihanController::class, 'getActive']);
-        Route::get('/today', [PelatihanController::class, 'getTodayTraining']);
-        Route::get('/upcoming', [PelatihanController::class, 'getUpcoming']);
-        Route::put('/{id}/status', [PelatihanController::class, 'updateStatus']);
-        Route::get('/statistics', [PelatihanController::class, 'statistics']);
-        Route::put('/{id}/toggle-active', [PelatihanController::class, 'toggleActive']);
     });
 
     // Test endpoint to verify authentication

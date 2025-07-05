@@ -20,11 +20,11 @@ class PelatihanController extends Controller
     public function index(Request $request)
     {
         try {
-            $query = Pelatihan::with('pegawai');
+            $query = Pelatihan::query();
 
-            // Filter by nama_pelatihan
-            if ($request->has('nama_pelatihan')) {
-                $query->where('nama_pelatihan', 'like', '%' . $request->nama_pelatihan . '%');
+            // Filter by judul
+            if ($request->has('judul')) {
+                $query->where('judul', 'like', '%' . $request->judul . '%');
             }
 
             // Filter by jenis_pelatihan
@@ -32,32 +32,9 @@ class PelatihanController extends Controller
                 $query->where('jenis_pelatihan', 'like', '%' . $request->jenis_pelatihan . '%');
             }
 
-            // Filter by status
-            if ($request->has('status')) {
-                $query->where('status', $request->status);
-            }
-
-            // Filter by pegawai_id
-            if ($request->has('pegawai_id')) {
-                $query->where('pegawai_id', $request->pegawai_id);
-            }
-
-            // Filter by tanggal_mulai range
-            if ($request->has('tanggal_mulai_dari') && $request->has('tanggal_mulai_sampai')) {
-                $query->whereBetween('tanggal_mulai', [$request->tanggal_mulai_dari, $request->tanggal_mulai_sampai]);
-            } elseif ($request->has('tanggal_mulai_dari')) {
-                $query->where('tanggal_mulai', '>=', $request->tanggal_mulai_dari);
-            } elseif ($request->has('tanggal_mulai_sampai')) {
-                $query->where('tanggal_mulai', '<=', $request->tanggal_mulai_sampai);
-            }
-
-            // Filter by tanggal_selesai range
-            if ($request->has('tanggal_selesai_dari') && $request->has('tanggal_selesai_sampai')) {
-                $query->whereBetween('tanggal_selesai', [$request->tanggal_selesai_dari, $request->tanggal_selesai_sampai]);
-            } elseif ($request->has('tanggal_selesai_dari')) {
-                $query->where('tanggal_selesai', '>=', $request->tanggal_selesai_dari);
-            } elseif ($request->has('tanggal_selesai_sampai')) {
-                $query->where('tanggal_selesai', '<=', $request->tanggal_selesai_sampai);
+            // Filter by is_active
+            if ($request->has('is_active')) {
+                $query->where('is_active', $request->is_active);
             }
 
             // Pagination
@@ -88,18 +65,13 @@ class PelatihanController extends Controller
     {
         try {
             $validator = Validator::make($request->all(), [
-                'pegawai_id' => 'required|exists:tb_pegawai,id',
-                'nama_pelatihan' => 'required|string|max:255',
-                'jenis_pelatihan' => 'required|string|max:100',
+                'judul' => 'required|string|max:255',
+                'jenis_pelatihan' => 'nullable|string|max:100',
                 'deskripsi' => 'nullable|string',
-                'tanggal_mulai' => 'required|date',
-                'tanggal_selesai' => 'required|date|after_or_equal:tanggal_mulai',
-                'penyelenggara' => 'required|string|max:255',
-                'lokasi' => 'required|string|max:255',
-                'biaya' => 'nullable|numeric',
-                'status' => 'required|in:Terdaftar,Berjalan,Selesai,Dibatalkan',
-                'sertifikat' => 'nullable|string|max:255',
-                'catatan' => 'nullable|string',
+                'jadwal_pelatihan' => 'nullable|date',
+                'link_url' => 'nullable|string|max:255',
+                'durasi' => 'nullable|integer|min:1',
+                'is_active' => 'boolean',
             ]);
 
             if ($validator->fails()) {
@@ -108,15 +80,6 @@ class PelatihanController extends Controller
                     'message' => 'Validation error',
                     'errors' => $validator->errors()
                 ], 422);
-            }
-
-            // Check if pegawai exists
-            $pegawai = Pegawai::find($request->pegawai_id);
-            if (!$pegawai) {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => 'Pegawai not found'
-                ], 404);
             }
 
             $pelatihan = Pelatihan::create($request->all());
@@ -144,7 +107,7 @@ class PelatihanController extends Controller
     public function show($id)
     {
         try {
-            $pelatihan = Pelatihan::with('pegawai')->find($id);
+            $pelatihan = Pelatihan::find($id);
 
             if (!$pelatihan) {
                 return response()->json([
@@ -187,7 +150,7 @@ class PelatihanController extends Controller
             }
 
             $validator = Validator::make($request->all(), [
-                'pegawai_id' => 'sometimes|required|exists:tb_pegawai,id',
+                'pegawai_id' => 'sometimes|required|exists:tb_pegawai,id_pegawai',
                 'nama_pelatihan' => 'sometimes|required|string|max:255',
                 'jenis_pelatihan' => 'sometimes|required|string|max:100',
                 'deskripsi' => 'nullable|string',
