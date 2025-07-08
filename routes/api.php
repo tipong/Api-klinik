@@ -232,7 +232,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // User Management Routes
     Route::prefix('users')->middleware('admin')->group(function () {
         Route::get('/', [AuthController::class, 'getAllUsers']);
-        Route::get('/{id}', [AuthController::class, 'getUser']);
+        Route::get('/{id}', [AuthController::class, 'getUserbyiD']);
         Route::put('/{id}', [AuthController::class, 'updateUser']);
         Route::delete('/{id}', [AuthController::class, 'deleteUser']);
         Route::put('/{id}/status', [AuthController::class, 'updateUserStatus']);

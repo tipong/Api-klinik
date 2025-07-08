@@ -46,7 +46,7 @@ class BookingTreatment extends Model
      */
     public function dokter()
     {
-        return $this->belongsTo(User::class, 'id_dokter', 'id_user');
+        return $this->belongsTo(Dokter::class, 'id_dokter', 'id_dokter');
     }
 
     /**
@@ -54,6 +54,22 @@ class BookingTreatment extends Model
      */
     public function beautician()
     {
-        return $this->belongsTo(User::class, 'id_beautician', 'id_user');
+        return $this->belongsTo(Beautician::class, 'id_beautician', 'id_beautician');
+    }
+    
+    /**
+     * Get the detail booking treatments for this booking.
+     */
+    public function detailBookingTreatments()
+    {
+        return $this->hasMany(DetailBookingTreatment::class, 'id_booking_treatment', 'id_booking_treatment');
+    }
+    
+    /**
+     * Get the payment for this booking.
+     */
+    public function pembayaran()
+    {
+        return $this->hasOne(Pembayaran::class, 'id_booking_treatment', 'id_booking_treatment');
     }
 }
