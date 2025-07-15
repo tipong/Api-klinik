@@ -312,4 +312,52 @@ class PegawaiController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Get pegawai data by user_id (for current logged in user)
+     */
+    public function getMyPegawaiData(Request $request)
+    {
+        try {
+            $user = $request->user();
+            
+            if (!$user) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'User tidak ditemukan atau tidak terautentikasi'
+                ], 401);
+            }
+            
+            // Find pegawai data where user_id matches current user
+            $pegawai = Pegawai::with(['user', 'posisi'])
+                ->where('id_user', $user->id_user)
+                ->first();
+            
+            if (!$pegawai) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Data pegawai tidak ditemukan untuk user ini',
+                    'user_id' => $user->id_user,
+                    'debug' => [
+                        'user_data' => $user,
+                        'search_field' => 'id_user',
+                        'search_value' => $user->id_user
+                    ]
+                ], 404);
+            }
+            
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Data pegawai berhasil ditemukan',
+                'data' => $pegawai
+            ]);
+            
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Terjadi kesalahan saat mengambil data pegawai',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
 }

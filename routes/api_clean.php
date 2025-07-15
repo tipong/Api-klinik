@@ -19,10 +19,11 @@ Route::prefix('auth')->group(function () {
     Route::post('/login', [AuthController::class, 'login']);
 });
 
-// Public Routes for Job Applications (view only)
+// Public Routes for Job Applications
 Route::prefix('lowongan')->group(function () {
     Route::get('/', [LowonganPekerjaanController::class, 'index']);
     Route::get('/{id}', [LowonganPekerjaanController::class, 'show']);
+    Route::post('/apply', [LamaranPekerjaanController::class, 'store']);
 });
 
 // Protected routes
@@ -46,20 +47,6 @@ Route::middleware('auth:sanctum')->group(function () {
         ]);
     });
 
-    // Self pegawai data endpoint - accessible by all authenticated users (MUST be before apiResource)
-    Route::get('/pegawai/my-data', [PegawaiController::class, 'getMyPegawaiData']);
-    
-    // Self gaji data endpoint - accessible by all authenticated users
-    Route::get('/gaji/my-data', [GajiController::class, 'getMyGaji']);
-    Route::get('/gaji/{id}/detail', [GajiController::class, 'show']);
-
-    // Job application endpoints - accessible by all authenticated users (customers can see their own applications)
-    Route::get('/lamaran-pekerjaan', [LamaranPekerjaanController::class, 'index']);
-    Route::get('/lamaran-pekerjaan/{id}', [LamaranPekerjaanController::class, 'show']);
-    
-    // Apply for job - accessible by authenticated customers
-    Route::post('/lowongan/apply', [LamaranPekerjaanController::class, 'store']);
-
     // Admin routes (Full access to all management features)
     Route::middleware('role:admin,hrd')->group(function () {
         // Posisi Management
@@ -73,26 +60,9 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/pegawai/active', [PegawaiController::class, 'getActive']);
         Route::get('/pegawai/by-posisi/{id_posisi}', [PegawaiController::class, 'getByPosisi']);
         
-        // Recruitment Management - All delete operations require admin privileges
-        Route::middleware('admin')->group(function () {
-            Route::delete('/lowongan-pekerjaan/bulk-delete', [LowonganPekerjaanController::class, 'bulkDestroy']);
-            Route::delete('/lowongan-pekerjaan/{id}/force', [LowonganPekerjaanController::class, 'forceDestroy']);
-            Route::delete('/lowongan-pekerjaan/{id}', [LowonganPekerjaanController::class, 'destroy']);
-        });
-        
-        // Other CRUD operations for lowongan-pekerjaan
-        Route::get('/lowongan-pekerjaan', [LowonganPekerjaanController::class, 'index']);
-        Route::post('/lowongan-pekerjaan', [LowonganPekerjaanController::class, 'store']);
-        Route::get('/lowongan-pekerjaan/{id}', [LowonganPekerjaanController::class, 'show']);
-        Route::put('/lowongan-pekerjaan/{id}', [LowonganPekerjaanController::class, 'update']);
-        Route::patch('/lowongan-pekerjaan/{id}', [LowonganPekerjaanController::class, 'update']);
-        
-        // Full CRUD for admin/hrd
-        Route::post('/lamaran-pekerjaan', [LamaranPekerjaanController::class, 'store']);
-        Route::put('/lamaran-pekerjaan/{id}', [LamaranPekerjaanController::class, 'update']);
-        Route::patch('/lamaran-pekerjaan/{id}', [LamaranPekerjaanController::class, 'update']);
-        Route::delete('/lamaran-pekerjaan/{id}', [LamaranPekerjaanController::class, 'destroy']);
-        
+        // Recruitment Management
+        Route::apiResource('lowongan-pekerjaan', LowonganPekerjaanController::class);
+        Route::apiResource('lamaran-pekerjaan', LamaranPekerjaanController::class);
         Route::apiResource('wawancara', WawancaraController::class);
         Route::apiResource('hasil-seleksi', HasilSeleksiController::class);
         Route::get('/lamaran/{id}/hasil', [HasilSeleksiController::class, 'getByLamaran']);

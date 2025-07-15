@@ -176,13 +176,13 @@ class AbsensiController extends Controller
         if ($existingAbsensi) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'Anda sudah melakukan absensi hari ini.'
+                'message' => 'Anda sudah melakukan absensi hari ini.',
+                'data' => $existingAbsensi
             ], 400);
         }
         
         $validator = Validator::make($request->all(), [
-            'lokasi_masuk' => 'nullable|string|max:500',
-            'keterangan' => 'nullable|string|max:255',
+            'status' => 'nullable|in:Hadir,Sakit,Izin,Alpa',
         ]);
         
         if ($validator->fails()) {
@@ -198,26 +198,14 @@ class AbsensiController extends Controller
         $absensi = Absensi::create([
             'id_pegawai' => $pegawai->id_pegawai,
             'tanggal' => $today,
-        ]);
-        
-        // Prepare response data with additional information
-        $responseData = [
-            'id_absensi' => $absensi->id_absensi,
-            'id_pegawai' => $absensi->id_pegawai,
-            'tanggal' => $absensi->tanggal->format('Y-m-d'),
             'jam_masuk' => $checkInTime->format('H:i:s'),
-            'lokasi_masuk' => $request->lokasi_masuk ?? 'Kantor',
-            'keterangan' => $request->keterangan,
-            'status' => 'Hadir',
-            'created_at' => $absensi->created_at,
-            'updated_at' => $absensi->updated_at,
-        ];
+            'status' => $request->status ?? 'Hadir',
+        ]);
         
         return response()->json([
             'status' => 'success',
             'message' => 'Check-in berhasil!',
-            'data' => $responseData,
-            'note' => 'Data absensi berhasil disimpan. Informasi tambahan (jam_masuk, lokasi_masuk, keterangan) ditampilkan untuk referensi.'
+            'data' => $absensi->load('pegawai.user')
         ], 201);
     }
 
@@ -283,54 +271,95 @@ class AbsensiController extends Controller
             ], 403);
         }
         
-        // Check if already checked out (we'll use a different approach since jam_keluar doesn't exist)
-        // For now, we'll check if there's already an attendance record for today with a different approach
-        $todayCheckouts = Absensi::where('id_pegawai', $pegawai->id_pegawai)
-                                 ->whereDate('tanggal', Carbon::today())
-                                 ->count();
-                                 
-        if ($todayCheckouts > 1) {
+        // Check if already checked out
+        if ($absensi->jam_keluar) {
             return response()->json([
                 'status' => 'error', 
-                'message' => 'Anda sudah melakukan check-out untuk hari ini'
+                'message' => 'Anda sudah melakukan check-out untuk absensi ini',
+                'data' => $absensi
             ], 400);
-        }
-        
-        $validator = Validator::make($request->all(), [
-            'lokasi_keluar' => 'nullable|string|max:500',
-            'keterangan' => 'nullable|string|max:1000',
-        ]);
-        
-        if ($validator->fails()) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Validation error',
-                'errors' => $validator->errors()
-            ], 422);
         }
         
         $checkOutTime = now();
         
-        // Since we can't update jam_keluar (column doesn't exist), we'll create a checkout record
-        // or just update the existing record with available fields
-        $absensi->touch(); // Update the updated_at timestamp
-        
-        // Prepare response data
-        $responseData = [
-            'id_absensi' => $absensi->id_absensi,
-            'id_pegawai' => $absensi->id_pegawai,
-            'tanggal' => $absensi->tanggal->format('Y-m-d'),
+        // Update absensi with checkout information
+        $absensi->update([
             'jam_keluar' => $checkOutTime->format('H:i:s'),
-            'lokasi_keluar' => $request->lokasi_keluar ?? 'Kantor',
-            'keterangan' => $request->keterangan,
-            'updated_at' => $absensi->updated_at,
-        ];
+        ]);
         
         return response()->json([
             'status' => 'success',
             'message' => 'Check-out berhasil!',
-            'data' => $responseData,
-            'note' => 'Check-out dicatat. Informasi checkout (jam_keluar, lokasi_keluar) ditampilkan untuk referensi.'
+            'data' => $absensi->load('pegawai.user'),
+            'work_duration' => $this->calculateWorkDuration($absensi->jam_masuk, $checkOutTime->format('H:i:s'))
+        ]);
+    }
+    
+    /**
+     * Calculate work duration between check-in and check-out
+     */
+    private function calculateWorkDuration($jamMasuk, $jamKeluar)
+    {
+        $checkIn = Carbon::createFromFormat('H:i:s', $jamMasuk);
+        $checkOut = Carbon::createFromFormat('H:i:s', $jamKeluar);
+        
+        $duration = $checkOut->diff($checkIn);
+        
+        return [
+            'hours' => $duration->h,
+            'minutes' => $duration->i,
+            'total_minutes' => ($duration->h * 60) + $duration->i,
+            'formatted' => $duration->format('%H:%I')
+        ];
+    }
+    
+    /**
+     * Get today's attendance status for current user
+     */
+    public function getTodayStatus(Request $request)
+    {
+        $user = $request->user();
+        $pegawai = $user->pegawai;
+        
+        if (!$pegawai) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Anda belum terdaftar sebagai pegawai. Hubungi HRD untuk pendaftaran.'
+            ], 400);
+        }
+        
+        $today = Carbon::today();
+        $todayAbsensi = Absensi::where('id_pegawai', $pegawai->id_pegawai)
+                               ->whereDate('tanggal', $today)
+                               ->first();
+        
+        if (!$todayAbsensi) {
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Belum melakukan absensi hari ini',
+                'data' => [
+                    'has_checked_in' => false,
+                    'has_checked_out' => false,
+                    'can_check_in' => true,
+                    'can_check_out' => false,
+                    'attendance' => null
+                ]
+            ]);
+        }
+        
+        $hasCheckedOut = !is_null($todayAbsensi->jam_keluar);
+        
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Status absensi hari ini',
+            'data' => [
+                'has_checked_in' => true,
+                'has_checked_out' => $hasCheckedOut,
+                'can_check_in' => false,
+                'can_check_out' => !$hasCheckedOut,
+                'attendance' => $todayAbsensi->load('pegawai.user'),
+                'work_duration' => $hasCheckedOut ? $this->calculateWorkDuration($todayAbsensi->jam_masuk, $todayAbsensi->jam_keluar) : null
+            ]
         ]);
     }
 }

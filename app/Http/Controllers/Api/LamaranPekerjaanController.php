@@ -25,6 +25,11 @@ class LamaranPekerjaanController extends Controller
         // Filter by user for non-admin roles
         if (!$user->isAdmin() && !$user->isHrd()) {
             $query->where('id_user', $user->id_user);
+        } else {
+            // For admin/HRD, allow filtering by specific user ID if provided
+            if ($request->filled('id_user')) {
+                $query->where('id_user', $request->id_user);
+            }
         }
         
         // Filter by lowongan

@@ -43,12 +43,21 @@ class LamaranPekerjaan extends Model
     ];
 
     /**
+     * The attributes that should be hidden for serialization.
+     *
+     * @var array<int, string>
+     */
+    protected $hidden = [
+        'CV', // Hide CV binary data from JSON serialization
+    ];
+
+    /**
      * The attributes that should be cast.
      *
      * @var array<string, string>
      */
     protected $casts = [
-        'CV' => 'binary',
+        // CV field is binary, no casting needed for null values
     ];
 
     /**

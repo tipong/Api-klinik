@@ -1,0 +1,748 @@
+{
+	"info": {
+		"_postman_id": "klinik-hrd-api-complete",
+		"name": "Klinik HRD Management API - Complete",
+		"description": "Complete API Collection untuk sistem HRD Management Klinik",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Authentication",
+			"item": [
+				{
+					"name": "Register User",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"John Doe\",\n    \"email\": \"john.doe@example.com\",\n    \"password\": \"password123\",\n    \"password_confirmation\": \"password123\",\n    \"role\": \"pegawai\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/register",
+							"host": ["{{base_url}}"],
+							"path": ["auth", "register"]
+						}
+					}
+				},
+				{
+					"name": "Login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.json().data && pm.response.json().data.token) {",
+									"    pm.environment.set(\"token\", pm.response.json().data.token);",
+									"    console.log(\"Token saved: \" + pm.response.json().data.token);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"admin@example.com\",\n    \"password\": \"admin123\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/login",
+							"host": ["{{base_url}}"],
+							"path": ["auth", "login"]
+						}
+					}
+				},
+				{
+					"name": "Get Profile",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/auth/profile",
+							"host": ["{{base_url}}"],
+							"path": ["auth", "profile"]
+						}
+					}
+				},
+				{
+					"name": "Update Profile",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"John Doe Updated\",\n    \"email\": \"john.updated@example.com\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/profile",
+							"host": ["{{base_url}}"],
+							"path": ["auth", "profile"]
+						}
+					}
+				},
+				{
+					"name": "Logout",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/auth/logout",
+							"host": ["{{base_url}}"],
+							"path": ["auth", "logout"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Absensi Management",
+			"item": [
+				{
+					"name": "Check-in (Absen Masuk)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"status\": \"Hadir\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/absensi",
+							"host": ["{{base_url}}"],
+							"path": ["absensi"]
+						}
+					}
+				},
+				{
+					"name": "Status Absensi Hari Ini",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/absensi/today-status",
+							"host": ["{{base_url}}"],
+							"path": ["absensi", "today-status"]
+						}
+					}
+				},
+				{
+					"name": "Check-out (Absen Keluar)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{}"
+						},
+						"url": {
+							"raw": "{{base_url}}/absensi/1/checkout",
+							"host": ["{{base_url}}"],
+							"path": ["absensi", "1", "checkout"]
+						}
+					}
+				},
+				{
+					"name": "Daftar Absensi",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/absensi",
+							"host": ["{{base_url}}"],
+							"path": ["absensi"]
+						}
+					}
+				},
+				{
+					"name": "Detail Absensi",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/absensi/1",
+							"host": ["{{base_url}}"],
+							"path": ["absensi", "1"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Pegawai Management",
+			"item": [
+				{
+					"name": "Daftar Pegawai",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/pegawai",
+							"host": ["{{base_url}}"],
+							"path": ["pegawai"]
+						}
+					}
+				},
+				{
+					"name": "Tambah Pegawai",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"id_user\": 1,\n    \"id_posisi\": 1,\n    \"nomor_ktp\": \"1234567890123456\",\n    \"alamat\": \"Jl. Contoh No. 123\",\n    \"no_telepon\": \"081234567890\",\n    \"tanggal_bergabung\": \"2025-01-01\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/pegawai",
+							"host": ["{{base_url}}"],
+							"path": ["pegawai"]
+						}
+					}
+				},
+				{
+					"name": "Detail Pegawai",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/pegawai/1",
+							"host": ["{{base_url}}"],
+							"path": ["pegawai", "1"]
+						}
+					}
+				},
+				{
+					"name": "Update Pegawai",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"alamat\": \"Jl. Updated No. 456\",\n    \"no_telepon\": \"081234567899\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/pegawai/1",
+							"host": ["{{base_url}}"],
+							"path": ["pegawai", "1"]
+						}
+					}
+				},
+				{
+					"name": "Hapus Pegawai",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/pegawai/1",
+							"host": ["{{base_url}}"],
+							"path": ["pegawai", "1"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Posisi Management",
+			"item": [
+				{
+					"name": "Daftar Posisi",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/posisi",
+							"host": ["{{base_url}}"],
+							"path": ["posisi"]
+						}
+					}
+				},
+				{
+					"name": "Tambah Posisi",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"nama_posisi\": \"Front Office\",\n    \"gaji_pokok\": 3000000,\n    \"tunjangan\": 500000,\n    \"deskripsi\": \"Melayani pelanggan dan administrasi\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/posisi",
+							"host": ["{{base_url}}"],
+							"path": ["posisi"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Gaji Management",
+			"item": [
+				{
+					"name": "Daftar Gaji",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/gaji",
+							"host": ["{{base_url}}"],
+							"path": ["gaji"]
+						}
+					}
+				},
+				{
+					"name": "Generate Gaji",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"bulan\": 7,\n    \"tahun\": 2025,\n    \"id_pegawai\": [1, 2, 3]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/gaji/generate",
+							"host": ["{{base_url}}"],
+							"path": ["gaji", "generate"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Recruitment",
+			"item": [
+				{
+					"name": "Daftar Lowongan",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/lowongan",
+							"host": ["{{base_url}}"],
+							"path": ["lowongan"]
+						}
+					}
+				},
+				{
+					"name": "Apply Lowongan",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"id_lowongan\": 1,\n    \"nama_pelamar\": \"Jane Doe\",\n    \"email_pelamar\": \"jane.doe@example.com\",\n    \"no_telepon_pelamar\": \"081234567890\",\n    \"alamat_pelamar\": \"Jl. Pelamar No. 123\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/lowongan/apply",
+							"host": ["{{base_url}}"],
+							"path": ["lowongan", "apply"]
+						}
+					}
+				},
+				{
+					"name": "Tambah Lowongan (Admin)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"id_posisi\": 1,\n    \"judul_lowongan\": \"Receptionist\",\n    \"deskripsi_pekerjaan\": \"Melayani tamu dan telepon\",\n    \"persyaratan\": \"Minimal SMA, komunikatif\",\n    \"gaji_ditawarkan\": 3500000,\n    \"tanggal_posting\": \"2025-07-12\",\n    \"tanggal_penutupan\": \"2025-08-12\",\n    \"status\": \"aktif\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/lowongan-pekerjaan",
+							"host": ["{{base_url}}"],
+							"path": ["lowongan-pekerjaan"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Staff Dashboards",
+			"item": [
+				{
+					"name": "Dashboard Admin/HRD",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/dashboard",
+							"host": ["{{base_url}}"],
+							"path": ["dashboard"]
+						}
+					}
+				},
+				{
+					"name": "Dashboard Front Office",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/front-office/dashboard",
+							"host": ["{{base_url}}"],
+							"path": ["front-office", "dashboard"]
+						}
+					}
+				},
+				{
+					"name": "Dashboard Kasir",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/kasir/dashboard",
+							"host": ["{{base_url}}"],
+							"path": ["kasir", "dashboard"]
+						}
+					}
+				},
+				{
+					"name": "Dashboard Dokter",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/dokter/dashboard",
+							"host": ["{{base_url}}"],
+							"path": ["dokter", "dashboard"]
+						}
+					}
+				},
+				{
+					"name": "Dashboard Beautician",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/beautician/dashboard",
+							"host": ["{{base_url}}"],
+							"path": ["beautician", "dashboard"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "System Utilities",
+			"item": [
+				{
+					"name": "Health Check",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/health",
+							"host": ["{{base_url}}"],
+							"path": ["health"]
+						}
+					}
+				},
+				{
+					"name": "Get User Info",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/user",
+							"host": ["{{base_url}}"],
+							"path": ["user"]
+						}
+					}
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8000/api",
+			"type": "string"
+		}
+	]
+}

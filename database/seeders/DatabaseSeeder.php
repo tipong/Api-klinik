@@ -14,10 +14,22 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $this->call([
-            HRTestDataSeeder::class,
-            DokterSeeder::class,
-            BookingTreatmentSeeder::class,
-            AbsensiSeeder::class,
+            // Core HR System Tables (in order of dependencies)
+            UserSeederNew::class,
+            PosisiSeederNew::class,
+            PegawaiSeederNew::class,
+            AbsensiSeederNew::class,
+            GajiSeederNew::class,
+            LowonganPekerjaanSeederNew::class,
+            LamaranPekerjaanSeederNew::class,
+            
+            // Beauty Clinic Tables
+            DokterSeederNew::class,
+            BeauticianSeederNew::class,
+            JenisTreatmentSeederNew::class,
+            TreatmentSeederNew::class,
+            PromoSeederNew::class,
+            BookingTreatmentSeederNew::class,
         ]);
     }
 }

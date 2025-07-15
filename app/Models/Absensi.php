@@ -37,7 +37,10 @@ class Absensi extends Model
      */
     protected $fillable = [
         'id_pegawai',
+        'jam_masuk',
+        'jam_keluar',
         'tanggal',
+        'status',
     ];
 
     /**
@@ -47,6 +50,8 @@ class Absensi extends Model
      */
     protected $casts = [
         'tanggal' => 'date',
+        'jam_masuk' => 'datetime:H:i:s',
+        'jam_keluar' => 'datetime:H:i:s',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];

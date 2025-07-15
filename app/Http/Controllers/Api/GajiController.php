@@ -23,33 +23,33 @@ class GajiController extends Controller
         $user = $request->user();
         $query = Gaji::with(['pegawai.user', 'pegawai.posisi']);
         
-        // Filter by user for non-admin/HRD roles
+        // Filter berdasarkan user untuk role non-admin/HRD
         if (!$user->hasAdminPrivileges()) {
-            $pegawai = $user->pegawai;
+            $pegawai = Pegawai::where('id_user', $user->id_user)->first();
             if ($pegawai) {
                 $query->where('id_pegawai', $pegawai->id_pegawai);
             } else {
-                // If user has no pegawai record, show empty result
+                // Jika user tidak memiliki record pegawai, tampilkan hasil kosong
                 $query->whereRaw('1 = 0');
             }
         }
         
-        // Filter by year
+        // Filter berdasarkan tahun
         if ($request->filled('tahun')) {
             $query->where('periode_tahun', $request->tahun);
         }
         
-        // Filter by month
+        // Filter berdasarkan bulan
         if ($request->filled('bulan')) {
             $query->where('periode_bulan', $request->bulan);
         }
         
-        // Filter by status
+        // Filter berdasarkan status
         if ($request->filled('status')) {
             $query->where('status', $request->status);
         }
         
-        // Filter by pegawai
+        // Filter berdasarkan pegawai
         if ($user->hasAdminPrivileges() && $request->filled('id_pegawai')) {
             $query->where('id_pegawai', $request->id_pegawai);
         }
@@ -58,72 +58,45 @@ class GajiController extends Controller
                       ->orderBy('periode_bulan', 'desc')
                       ->paginate(15);
         
+        // Tambahkan data absensi untuk setiap record gaji
+        $gaji->getCollection()->transform(function ($item) {
+            // Hitung absensi untuk periode tersebut
+            $startDate = Carbon::createFromDate($item->periode_tahun, $item->periode_bulan, 1);
+            $endDate = $startDate->copy()->endOfMonth();
+            
+            $jumlahAbsensi = Absensi::where('id_pegawai', $item->id_pegawai)
+                                   ->whereBetween('tanggal', [$startDate->format('Y-m-d'), $endDate->format('Y-m-d')])
+                                   ->count();
+            
+            // Hitung total hari kerja (weekdays) dalam bulan tersebut
+            $totalHariKerja = $startDate->diffInDaysFiltered(function(Carbon $date) {
+                return $date->isWeekday();
+            }, $endDate);
+            
+            $item->jumlah_absensi = $jumlahAbsensi;
+            $item->total_hari_kerja = $totalHariKerja;
+            $item->persentase_kehadiran = $totalHariKerja > 0 ? round(($jumlahAbsensi / $totalHariKerja) * 100, 2) : 0;
+            
+            return $item;
+        });
+        
         return response()->json([
-            'status' => 'success',
+            'status' => 'sukses',
+            'pesan' => 'Data gaji berhasil diambil',
             'data' => $gaji
         ]);
     }
 
     /**
-     * Store a newly created resource in storage.
+     * Manual salary creation is disabled. Use generateGaji() instead.
      */
     public function store(Request $request)
     {
-        $validator = Validator::make($request->all(), [
-            'id_pegawai' => 'required|exists:tb_pegawai,id_pegawai',
-            'periode_bulan' => 'required|integer|between:1,12',
-            'periode_tahun' => 'required|integer|min:2000',
-            'gaji_pokok' => 'required|numeric|min:0',
-            'gaji_bonus' => 'nullable|numeric|min:0',
-            'gaji_kehadiran' => 'nullable|numeric|min:0',
-            'tanggal_pembayaran' => 'nullable|date',
-            'status' => 'required|in:Terbayar,Belum Terbayar',
-        ]);
-        
-        if ($validator->fails()) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Validation error',
-                'errors' => $validator->errors()
-            ], 422);
-        }
-        
-        // Check if gaji for this pegawai and period already exists
-        $existingGaji = Gaji::where('id_pegawai', $request->id_pegawai)
-                          ->where('periode_bulan', $request->periode_bulan)
-                          ->where('periode_tahun', $request->periode_tahun)
-                          ->first();
-                          
-        if ($existingGaji) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Gaji untuk pegawai dan periode ini sudah ada'
-            ], 400);
-        }
-        
-        // Calculate total
-        $gajiPokok = $request->gaji_pokok ?? 0;
-        $gajiBonus = $request->gaji_bonus ?? 0;
-        $gajiKehadiran = $request->gaji_kehadiran ?? 0;
-        $gajiTotal = $gajiPokok + $gajiBonus + $gajiKehadiran;
-        
-        $gaji = Gaji::create([
-            'id_pegawai' => $request->id_pegawai,
-            'periode_bulan' => $request->periode_bulan,
-            'periode_tahun' => $request->periode_tahun,
-            'gaji_pokok' => $gajiPokok,
-            'gaji_bonus' => $gajiBonus,
-            'gaji_kehadiran' => $gajiKehadiran,
-            'gaji_total' => $gajiTotal,
-            'tanggal_pembayaran' => $request->tanggal_pembayaran,
-            'status' => $request->status,
-        ]);
-        
         return response()->json([
-            'status' => 'success',
-            'message' => 'Gaji berhasil ditambahkan',
-            'data' => $gaji->load(['pegawai.user', 'pegawai.posisi'])
-        ], 201);
+            'status' => 'gagal',
+            'pesan' => 'Penambahan gaji manual tidak diizinkan. Gunakan fitur generate gaji massal.',
+            'data' => null
+        ], 403);
     }
 
     /**
@@ -135,23 +108,53 @@ class GajiController extends Controller
         
         if (!$gaji) {
             return response()->json([
-                'status' => 'error',
-                'message' => 'Gaji tidak ditemukan'
+                'status' => 'gagal',
+                'pesan' => 'Gaji tidak ditemukan'
             ], 404);
         }
         
         $user = request()->user();
         
         // Check if user is allowed to view this gaji
-        if (!$user->hasAdminPrivileges() && $user->pegawai && $user->pegawai->id_pegawai !== $gaji->id_pegawai) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Anda tidak memiliki akses untuk melihat data gaji ini'
-            ], 403);
+        if (!$user->hasAdminPrivileges()) {
+            // Find pegawai data for this user
+            $pegawai = Pegawai::where('id_user', $user->id_user)->first();
+            
+            if (!$pegawai) {
+                return response()->json([
+                    'status' => 'gagal',
+                    'pesan' => 'Data pegawai tidak ditemukan untuk user ini'
+                ], 404);
+            }
+            
+            // Check if this gaji belongs to the current user's pegawai
+            if ($pegawai->id_pegawai !== $gaji->id_pegawai) {
+                return response()->json([
+                    'status' => 'gagal',
+                    'pesan' => 'Anda tidak memiliki akses untuk melihat data gaji ini'
+                ], 403);
+            }
         }
         
+        // Tambahkan data absensi untuk record gaji ini
+        $startDate = Carbon::createFromDate($gaji->periode_tahun, $gaji->periode_bulan, 1);
+        $endDate = $startDate->copy()->endOfMonth();
+        
+        $jumlahAbsensi = Absensi::where('id_pegawai', $gaji->id_pegawai)
+                               ->whereBetween('tanggal', [$startDate->format('Y-m-d'), $endDate->format('Y-m-d')])
+                               ->count();
+        
+        $totalHariKerja = $startDate->diffInDaysFiltered(function(Carbon $date) {
+            return $date->isWeekday();
+        }, $endDate);
+        
+        $gaji->jumlah_absensi = $jumlahAbsensi;
+        $gaji->total_hari_kerja = $totalHariKerja;
+        $gaji->persentase_kehadiran = $totalHariKerja > 0 ? round(($jumlahAbsensi / $totalHariKerja) * 100, 2) : 0;
+        
         return response()->json([
-            'status' => 'success',
+            'status' => 'sukses',
+            'pesan' => 'Data gaji berhasil diambil',
             'data' => $gaji
         ]);
     }
@@ -165,23 +168,21 @@ class GajiController extends Controller
         
         if (!$gaji) {
             return response()->json([
-                'status' => 'error',
-                'message' => 'Gaji tidak ditemukan'
+                'status' => 'gagal',
+                'pesan' => 'Gaji tidak ditemukan'
             ], 404);
         }
         
         $validator = Validator::make($request->all(), [
             'gaji_pokok' => 'sometimes|required|numeric|min:0',
-            'gaji_bonus' => 'nullable|numeric|min:0',
-            'gaji_kehadiran' => 'nullable|numeric|min:0',
             'tanggal_pembayaran' => 'nullable|date',
             'status' => 'sometimes|required|in:Terbayar,Belum Terbayar',
         ]);
         
         if ($validator->fails()) {
             return response()->json([
-                'status' => 'error',
-                'message' => 'Validation error',
+                'status' => 'gagal',
+                'pesan' => 'Kesalahan validasi',
                 'errors' => $validator->errors()
             ], 422);
         }
@@ -197,17 +198,28 @@ class GajiController extends Controller
         }
         
         $gaji->update($request->only([
-            'gaji_pokok',
-            'gaji_bonus',
-            'gaji_kehadiran',
-            'gaji_total',
-            'tanggal_pembayaran',
             'status',
         ]));
         
+        // Tambahkan data absensi untuk record gaji yang sudah diupdate
+        $startDate = Carbon::createFromDate($gaji->periode_tahun, $gaji->periode_bulan, 1);
+        $endDate = $startDate->copy()->endOfMonth();
+        
+        $jumlahAbsensi = Absensi::where('id_pegawai', $gaji->id_pegawai)
+                               ->whereBetween('tanggal', [$startDate->format('Y-m-d'), $endDate->format('Y-m-d')])
+                               ->count();
+        
+        $totalHariKerja = $startDate->diffInDaysFiltered(function(Carbon $date) {
+            return $date->isWeekday();
+        }, $endDate);
+        
+        $gaji->jumlah_absensi = $jumlahAbsensi;
+        $gaji->total_hari_kerja = $totalHariKerja;
+        $gaji->persentase_kehadiran = $totalHariKerja > 0 ? round(($jumlahAbsensi / $totalHariKerja) * 100, 2) : 0;
+        
         return response()->json([
-            'status' => 'success',
-            'message' => 'Gaji berhasil diperbarui',
+            'status' => 'sukses',
+            'pesan' => 'Gaji berhasil diperbarui',
             'data' => $gaji->load(['pegawai.user', 'pegawai.posisi'])
         ]);
     }
@@ -221,16 +233,16 @@ class GajiController extends Controller
         
         if (!$gaji) {
             return response()->json([
-                'status' => 'error',
-                'message' => 'Gaji tidak ditemukan'
+                'status' => 'gagal',
+                'pesan' => 'Gaji tidak ditemukan'
             ], 404);
         }
         
         $gaji->delete();
         
         return response()->json([
-            'status' => 'success',
-            'message' => 'Gaji berhasil dihapus'
+            'status' => 'sukses',
+            'pesan' => 'Gaji berhasil dihapus'
         ]);
     }
 
@@ -246,8 +258,8 @@ class GajiController extends Controller
         
         if ($validator->fails()) {
             return response()->json([
-                'status' => 'error',
-                'message' => 'Validation error',
+                'status' => 'gagal',
+                'pesan' => 'Kesalahan validasi',
                 'errors' => $validator->errors()
             ], 422);
         }
@@ -335,8 +347,8 @@ class GajiController extends Controller
         }
         
         return response()->json([
-            'status' => 'success',
-            'message' => "Berhasil generate {$count} data gaji",
+            'status' => 'sukses',
+            'pesan' => "Berhasil generate {$count} data gaji",
             'errors' => $errors
         ]);
     }
@@ -461,7 +473,8 @@ class GajiController extends Controller
         }
         
         return response()->json([
-            'status' => 'success',
+            'status' => 'sukses',
+            'pesan' => 'Data pratinjau perhitungan gaji berhasil diambil',
             'data' => [
                 'periode' => [
                     'bulan' => $bulan,
@@ -585,7 +598,8 @@ class GajiController extends Controller
         ];
         
         return response()->json([
-            'status' => 'success',
+            'status' => 'sukses',
+            'pesan' => 'Statistik gaji berhasil diambil',
             'data' => $statistics
         ]);
     }
@@ -602,5 +616,91 @@ class GajiController extends Controller
             'periode_bulan' => $currentMonth,
             'periode_tahun' => $currentYear
         ]));
+    }
+
+    /**
+     * Get gaji data for current logged in user only
+     */
+    public function getMyGaji(Request $request)
+    {
+        try {
+            $user = $request->user();
+            
+            if (!$user) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'User tidak ditemukan atau tidak terautentikasi'
+                ], 401);
+            }
+            
+            // Find pegawai data first
+            $pegawai = Pegawai::where('id_user', $user->id_user)->first();
+            
+            if (!$pegawai) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Data pegawai tidak ditemukan untuk user ini',
+                    'user_id' => $user->id_user
+                ], 404);
+            }
+            
+            // Get gaji data for this pegawai only
+            $query = Gaji::with(['pegawai.user', 'pegawai.posisi'])
+                ->where('id_pegawai', $pegawai->id_pegawai);
+            
+            // Apply filters if provided
+            if ($request->filled('periode_tahun')) {
+                $query->where('periode_tahun', $request->periode_tahun);
+            }
+            
+            if ($request->filled('periode_bulan')) {
+                $query->where('periode_bulan', $request->periode_bulan);
+            }
+            
+            if ($request->filled('status')) {
+                $query->where('status', $request->status);
+            }
+            
+            // Pagination
+            $perPage = $request->get('per_page', 15);
+            $gaji = $query->orderBy('periode_tahun', 'desc')
+                         ->orderBy('periode_bulan', 'desc')
+                         ->paginate($perPage);
+            
+            // Tambahkan data absensi untuk setiap record gaji (sama seperti di method index)
+            $gaji->getCollection()->transform(function ($item) {
+                // Hitung absensi untuk periode tersebut
+                $startDate = Carbon::createFromDate($item->periode_tahun, $item->periode_bulan, 1);
+                $endDate = $startDate->copy()->endOfMonth();
+                
+                $jumlahAbsensi = Absensi::where('id_pegawai', $item->id_pegawai)
+                                       ->whereBetween('tanggal', [$startDate->format('Y-m-d'), $endDate->format('Y-m-d')])
+                                       ->count();
+                
+                // Hitung total hari kerja (weekdays) dalam bulan tersebut
+                $totalHariKerja = $startDate->diffInDaysFiltered(function(Carbon $date) {
+                    return $date->isWeekday();
+                }, $endDate);
+                
+                $item->jumlah_absensi = $jumlahAbsensi;
+                $item->total_hari_kerja = $totalHariKerja;
+                $item->persentase_kehadiran = $totalHariKerja > 0 ? round(($jumlahAbsensi / $totalHariKerja) * 100, 2) : 0;
+                
+                return $item;
+            });
+            
+            return response()->json([
+                'status' => 'sukses',
+                'message' => 'Data gaji berhasil ditemukan',
+                'data' => $gaji
+            ]);
+            
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Terjadi kesalahan saat mengambil data gaji',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 }

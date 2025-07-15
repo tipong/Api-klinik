@@ -33,6 +33,13 @@ class WawancaraController extends Controller
                 $query->where('id_lamaran_pekerjaan', $request->id_lamaran_pekerjaan);
             }
             
+            // Filter by lowongan pekerjaan
+            if ($request->filled('id_lowongan_pekerjaan')) {
+                $query->whereHas('lamaranPekerjaan', function ($subQuery) use ($request) {
+                    $subQuery->where('id_lowongan_pekerjaan', $request->id_lowongan_pekerjaan);
+                });
+            }
+            
             // Filter by date range
             if ($request->filled('tanggal_dari') && $request->filled('tanggal_sampai')) {
                 $query->whereBetween('tanggal_wawancara', [$request->tanggal_dari, $request->tanggal_sampai]);
