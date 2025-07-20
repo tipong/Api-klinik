@@ -32,11 +32,6 @@ class PelatihanController extends Controller
                 $query->where('jenis_pelatihan', 'like', '%' . $request->jenis_pelatihan . '%');
             }
 
-            // Filter by is_active
-            if ($request->has('is_active')) {
-                $query->where('is_active', $request->is_active);
-            }
-
             // Pagination
             $perPage = $request->get('per_page', 15);
             $pelatihan = $query->paginate($perPage);
@@ -71,7 +66,6 @@ class PelatihanController extends Controller
                 'jadwal_pelatihan' => 'nullable|date',
                 'link_url' => 'nullable|string|max:255',
                 'durasi' => 'nullable|integer|min:1',
-                'is_active' => 'boolean',
             ]);
 
             if ($validator->fails()) {
@@ -150,18 +144,12 @@ class PelatihanController extends Controller
             }
 
             $validator = Validator::make($request->all(), [
-                'pegawai_id' => 'sometimes|required|exists:tb_pegawai,id_pegawai',
-                'nama_pelatihan' => 'sometimes|required|string|max:255',
-                'jenis_pelatihan' => 'sometimes|required|string|max:100',
+                'judul' => 'sometimes|required|string|max:255',
+                'jenis_pelatihan' => 'sometimes|nullable|string|max:100',
                 'deskripsi' => 'nullable|string',
-                'tanggal_mulai' => 'sometimes|required|date',
-                'tanggal_selesai' => 'sometimes|required|date|after_or_equal:tanggal_mulai',
-                'penyelenggara' => 'sometimes|required|string|max:255',
-                'lokasi' => 'sometimes|required|string|max:255',
-                'biaya' => 'nullable|numeric',
-                'status' => 'sometimes|required|in:Terdaftar,Berjalan,Selesai,Dibatalkan',
-                'sertifikat' => 'nullable|string|max:255',
-                'catatan' => 'nullable|string',
+                'jadwal_pelatihan' => 'sometimes|nullable|date',
+                'link_url' => 'sometimes|nullable|string|max:255',
+                'durasi' => 'sometimes|nullable|integer|min:1',
             ]);
 
             if ($validator->fails()) {

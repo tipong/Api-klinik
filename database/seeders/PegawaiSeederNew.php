@@ -25,7 +25,7 @@ class PegawaiSeederNew extends Seeder
                 'email' => 'admin@klinik.com',
                 'NIP' => 'ADM001',
                 'NIK' => '3171012345678901',
-                'id_posisi' => 10, // Admin
+                'id_posisi' => 6, // Admin
                 'agama' => 'Islam',
                 'tanggal_masuk' => '2024-01-01',
             ],
@@ -39,7 +39,7 @@ class PegawaiSeederNew extends Seeder
                 'email' => 'hrd@klinik.com',
                 'NIP' => 'HRD001',
                 'NIK' => '3171012345678902',
-                'id_posisi' => 5, // HRD Manager
+                'id_posisi' => 3, // HRD Manager
                 'agama' => 'Islam',
                 'tanggal_masuk' => '2024-01-15',
             ],
@@ -81,7 +81,7 @@ class PegawaiSeederNew extends Seeder
                 'email' => 'beautician1@klinik.com',
                 'NIP' => 'BTC001',
                 'NIK' => '3171012345678905',
-                'id_posisi' => 3, // Beautician Senior
+                'id_posisi' => 2, // Beautician Senior
                 'agama' => 'Katolik',
                 'tanggal_masuk' => '2024-03-01',
             ],
@@ -95,7 +95,7 @@ class PegawaiSeederNew extends Seeder
                 'email' => 'beautician2@klinik.com',
                 'NIP' => 'BTC002',
                 'NIK' => '3171012345678906',
-                'id_posisi' => 4, // Beautician Junior
+                'id_posisi' => 2, // Beautician Junior
                 'agama' => 'Islam',
                 'tanggal_masuk' => '2024-03-15',
             ],
@@ -109,7 +109,7 @@ class PegawaiSeederNew extends Seeder
                 'email' => 'frontoffice@klinik.com',
                 'NIP' => 'FO001',
                 'NIK' => '3171012345678907',
-                'id_posisi' => 6, // Front Office
+                'id_posisi' => 4, // Front Office
                 'agama' => 'Islam',
                 'tanggal_masuk' => '2024-04-01',
             ],
@@ -123,7 +123,7 @@ class PegawaiSeederNew extends Seeder
                 'email' => 'kasir@klinik.com',
                 'NIP' => 'KSR001',
                 'NIK' => '3171012345678908',
-                'id_posisi' => 7, // Kasir
+                'id_posisi' => 5, // Kasir
                 'agama' => 'Islam',
                 'tanggal_masuk' => '2024-04-15',
             ],

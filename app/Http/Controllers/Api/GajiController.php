@@ -60,23 +60,21 @@ class GajiController extends Controller
         
         // Tambahkan data absensi untuk setiap record gaji
         $gaji->getCollection()->transform(function ($item) {
-            // Hitung absensi untuk periode tersebut
             $startDate = Carbon::createFromDate($item->periode_tahun, $item->periode_bulan, 1);
             $endDate = $startDate->copy()->endOfMonth();
             
             $jumlahAbsensi = Absensi::where('id_pegawai', $item->id_pegawai)
-                                   ->whereBetween('tanggal', [$startDate->format('Y-m-d'), $endDate->format('Y-m-d')])
-                                   ->count();
+                                ->whereBetween('tanggal', [$startDate->format('Y-m-d'), $endDate->format('Y-m-d')])
+                                ->count();
             
-            // Hitung total hari kerja (weekdays) dalam bulan tersebut
-            $totalHariKerja = $startDate->diffInDaysFiltered(function(Carbon $date) {
-                return $date->isWeekday();
-            }, $endDate);
-            
+            $totalHariKerja = (int) $startDate->diffInDays($endDate) + 1;
+
             $item->jumlah_absensi = $jumlahAbsensi;
             $item->total_hari_kerja = $totalHariKerja;
-            $item->persentase_kehadiran = $totalHariKerja > 0 ? round(($jumlahAbsensi / $totalHariKerja) * 100, 2) : 0;
-            
+            $item->persentase_kehadiran = $totalHariKerja > 0
+                ? round(($jumlahAbsensi * 100) / $totalHariKerja, 2)
+                : 0;
+
             return $item;
         });
         

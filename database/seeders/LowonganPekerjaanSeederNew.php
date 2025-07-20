@@ -15,7 +15,7 @@ class LowonganPekerjaanSeederNew extends Seeder
     {
         $jobPostings = [
             [
-                'id_posisi' => 6, // Front Office
+                'id_posisi' => 4, // Front Office
                 'judul_pekerjaan' => 'Front Office Staff - Klinik Kecantikan',
                 'jumlah_lowongan' => 2,
                 'pengalaman_minimal' => '1 tahun',
@@ -28,7 +28,7 @@ class LowonganPekerjaanSeederNew extends Seeder
                 'persyaratan' => "- Pendidikan minimal SMA/SMK\n- Pengalaman minimal 1 tahun di bidang customer service\n- Berpenampilan menarik dan rapi\n- Memiliki kemampuan komunikasi yang baik\n- Dapat mengoperasikan komputer dan sistem POS\n- Bersedia bekerja shift",
             ],
             [
-                'id_posisi' => 4, // Beautician Junior
+                'id_posisi' => 2, // Beautician Junior
                 'judul_pekerjaan' => 'Beautician Junior - Perawatan Wajah',
                 'jumlah_lowongan' => 3,
                 'pengalaman_minimal' => '0-1 tahun',
@@ -41,7 +41,7 @@ class LowonganPekerjaanSeederNew extends Seeder
                 'persyaratan' => "- Pendidikan minimal SMK Kecantikan atau D3 Tata Rias\n- Fresh graduate atau pengalaman 0-1 tahun\n- Memiliki sertifikat perawatan wajah/beauty therapy\n- Berpenampilan menarik dan hygiene yang baik\n- Teliti dan sabar dalam bekerja\n- Bersedia mengikuti training",
             ],
             [
-                'id_posisi' => 7, // Kasir
+                'id_posisi' => 5, // Kasir
                 'judul_pekerjaan' => 'Kasir - Part Time/Full Time',
                 'jumlah_lowongan' => 1,
                 'pengalaman_minimal' => '6 bulan',
@@ -54,7 +54,7 @@ class LowonganPekerjaanSeederNew extends Seeder
                 'persyaratan' => "- Pendidikan minimal SMA\n- Pengalaman minimal 6 bulan sebagai kasir\n- Jujur dan dapat dipercaya\n- Teliti dalam menghitung uang\n- Dapat mengoperasikan mesin kasir dan EDC\n- Bersedia bekerja part time atau full time",
             ],
             [
-                'id_posisi' => 8, // Cleaning Service
+                'id_posisi' => 6, // Cleaning Service (menggunakan Admin untuk sementara)
                 'judul_pekerjaan' => 'Cleaning Service - Kebersihan Klinik',
                 'jumlah_lowongan' => 2,
                 'pengalaman_minimal' => 'Tidak ada',
@@ -67,7 +67,7 @@ class LowonganPekerjaanSeederNew extends Seeder
                 'persyaratan' => "- Pendidikan minimal SD/SMP\n- Sehat jasmani dan rohani\n- Rajin dan bertanggung jawab\n- Memahami prosedur kebersihan medis (akan dilatih)\n- Dapat bekerja dalam tim\n- Bersedia bekerja shift pagi/sore",
             ],
             [
-                'id_posisi' => 2, // Dokter Umum
+                'id_posisi' => 1, // Dokter Umum
                 'judul_pekerjaan' => 'Dokter Umum - Klinik Kecantikan',
                 'jumlah_lowongan' => 1,
                 'pengalaman_minimal' => '2 tahun',

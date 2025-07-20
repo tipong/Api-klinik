@@ -35,7 +35,6 @@ class Pelatihan extends Model
         'jadwal_pelatihan',
         'link_url',
         'durasi',
-        'is_active',
     ];
 
     /**
@@ -46,16 +45,7 @@ class Pelatihan extends Model
     protected $casts = [
         'jadwal_pelatihan' => 'datetime',
         'durasi' => 'integer',
-        'is_active' => 'boolean',
     ];
-
-    /**
-     * Check if the pelatihan is active.
-     */
-    public function isActive()
-    {
-        return $this->is_active;
-    }
 
     /**
      * Check if the pelatihan is in the future.
