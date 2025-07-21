@@ -95,6 +95,8 @@ Route::middleware('auth:sanctum')->group(function () {
         
         Route::apiResource('wawancara', WawancaraController::class);
         Route::apiResource('hasil-seleksi', HasilSeleksiController::class);
+        Route::get('/hasil-seleksi/{id}', [HasilSeleksiController::class, 'show']);
+        Route::get('hasil-seleksi/user/{id_user}', [HasilSeleksiController::class, 'getByUser']);
         Route::get('/lamaran/{id}/hasil', [HasilSeleksiController::class, 'getByLamaran']);
         
         // Gaji Management

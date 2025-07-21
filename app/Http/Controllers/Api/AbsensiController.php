@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Carbon\Carbon;
 
+
 class AbsensiController extends Controller
 {
     use ApiResponseTrait;
@@ -209,6 +210,8 @@ class AbsensiController extends Controller
         ], 201);
     }
 
+
+
     /**
      * Display the specified resource.
      */
@@ -293,6 +296,49 @@ class AbsensiController extends Controller
             'data' => $absensi->load('pegawai.user'),
             'work_duration' => $this->calculateWorkDuration($absensi->jam_masuk, $checkOutTime->format('H:i:s'))
         ]);
+    }
+
+    public function update(Request $request, $id)
+    {
+        // 1. Validasi input (tanpa keterangan)
+        $validator = Validator::make($request->all(), [
+            'tanggal'    => 'required|date',
+            'jam_masuk'  => 'required|date_format:H:i:s',
+            'jam_keluar' => 'nullable|date_format:H:i:s',
+            'status'     => 'required|in:Hadir,Sakit,Izin,Alpa',
+        ]);
+
+        if ($validator->fails()) {
+            // parameter ke-2: status code; ke-3: detail errors
+            return $this->errorResponse(
+                'Validation error',
+                422,
+                $validator->errors()
+            );
+        }
+
+        // 2. Cari record absensi
+        $absensi = Absensi::find($id);
+        if (! $absensi) {
+            return $this->errorResponse('Absensi tidak ditemukan', 404);
+        }
+
+        // 3. Cek hak akses (admin/HRD atau pemilik record)
+        $user    = $request->user();
+        $isOwner = $user->pegawai && $user->pegawai->id_pegawai === $absensi->id_pegawai;
+        if (! $user->isAdmin() && ! $user->isHrd() && ! $isOwner) {
+            return $this->errorResponse('Anda tidak memiliki akses untuk memperbarui absensi ini', 403);
+        }
+
+        // 4. Simpan perubahan (tanpa keterangan)
+        $absensi->tanggal    = $request->tanggal;
+        $absensi->jam_masuk  = $request->jam_masuk;
+        $absensi->jam_keluar = $request->jam_keluar;
+        $absensi->status     = $request->status;
+        $absensi->save();
+
+        // 5. Respons sukses
+        return $this->successResponse('Absensi berhasil diperbarui', $absensi);
     }
     
     /**

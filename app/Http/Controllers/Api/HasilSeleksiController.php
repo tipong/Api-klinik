@@ -21,6 +21,11 @@ class HasilSeleksiController extends Controller
         $user = $request->user();
         $query = HasilSeleksi::with(['user', 'lowonganPekerjaan.posisi']);
         
+        // Filter by specific lamaran ID if provided
+        if ($request->filled('id_hasil_seleksi')) {
+            $query->where('id_hasil_seleksi', $request->id_hasil_seleksi);
+        }
+        
         // Filter by user for non-admin roles
         if (!$user->isAdmin() && !$user->isHrd()) {
             $query->where('id_user', $user->id_user);
@@ -44,6 +49,30 @@ class HasilSeleksiController extends Controller
         $hasilSeleksi = $query->orderBy('created_at', 'desc')->paginate(15);
         
         return $this->successResponse($hasilSeleksi, 'Data hasil seleksi berhasil diambil');
+    }
+
+
+    public function getByUser(Request $request, $id_user)
+    {
+        $currentUser = $request->user();
+
+        if (! $currentUser->isAdmin() 
+            && ! $currentUser->isHrd() 
+            && $currentUser->id_user != $id_user) {
+            return $this->errorResponse('Anda tidak memiliki akses untuk melihat data ini', 403);
+        }
+
+        $query = HasilSeleksi::with(['user', 'lowonganPekerjaan.posisi'])
+            ->where('id_user', $id_user)
+            ->orderBy('created_at', 'desc');
+
+        $perPage = $request->get('per_page', 15);
+        $hasilSeleksi = $query->paginate($perPage);
+
+        return $this->successResponse(
+            $hasilSeleksi,
+            "Data hasil seleksi untuk user dengan id {$id_user} berhasil diambil"
+        );
     }
 
     /**
