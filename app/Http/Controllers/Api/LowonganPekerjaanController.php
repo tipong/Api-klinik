@@ -531,4 +531,40 @@ class LowonganPekerjaanController extends Controller
             );
         }
     }
+
+    /**
+     * Public delete method for frontend integration (no auth required)
+     */
+    public function publicDestroy($id)
+    {
+        try {
+            $lowongan = LowonganPekerjaan::find($id);
+            
+            if (!$lowongan) {
+                return $this->errorResponse('Data lowongan tidak ditemukan', 404, []);
+            }
+            
+            // Store data for response before deletion
+            $responseData = [
+                'id_lowongan' => $lowongan->id_lowongan,
+                'judul_pekerjaan' => $lowongan->judul_pekerjaan,
+                'posisi' => $lowongan->posisi->nama_posisi ?? 'Unknown',
+                'status' => $lowongan->status
+            ];
+            
+            $lowongan->delete();
+            
+            return $this->successResponse(
+                $responseData,
+                'Data lowongan berhasil dihapus'
+            );
+            
+        } catch (\Exception $e) {
+            return $this->errorResponse(
+                'Gagal menghapus data lowongan',
+                500,
+                ['error' => $e->getMessage()]
+            );
+        }
+    }
 }

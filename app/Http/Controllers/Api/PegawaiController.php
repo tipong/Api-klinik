@@ -6,12 +6,14 @@ use App\Http\Controllers\Controller;
 use App\Models\Pegawai;
 use App\Models\User;
 use App\Models\Posisi;
+use App\Traits\ApiResponseTrait;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Hash;
 
 class PegawaiController extends Controller
 {
+    use ApiResponseTrait;
     /**
      * Display a listing of the resource.
      */
@@ -262,27 +264,33 @@ class PegawaiController extends Controller
      */
     public function destroy(string $id)
     {
-        $pegawai = Pegawai::find($id);
-        
-        if (!$pegawai) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Pegawai tidak ditemukan'
-            ], 404);
-        }
-        
-        // Check if pegawai has related data
-        if ($pegawai->absensi()->count() > 0 || $pegawai->gaji()->count() > 0) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Pegawai tidak dapat dihapus karena memiliki data terkait (absensi, gaji, dll)'
-            ], 400);
-        }
-        
-        // Start transaction
-        \DB::beginTransaction();
-        
         try {
+            $pegawai = Pegawai::find($id);
+            
+            if (!$pegawai) {
+                return $this->errorResponse('Data pegawai tidak ditemukan', 404, []);
+            }
+            
+            // Check if pegawai has related data
+            if ($pegawai->absensi()->count() > 0 || $pegawai->gaji()->count() > 0) {
+                return $this->errorResponse(
+                    'Pegawai tidak dapat dihapus karena memiliki data terkait (absensi, gaji, dll)',
+                    400,
+                    []
+                );
+            }
+            
+            // Store data for response before deletion
+            $responseData = [
+                'id_pegawai' => $pegawai->id_pegawai,
+                'nama_lengkap' => $pegawai->nama_lengkap,
+                'nip' => $pegawai->NIP,
+                'posisi' => $pegawai->posisi->nama_posisi ?? 'Unknown'
+            ];
+            
+            // Start transaction
+            \DB::beginTransaction();
+            
             // Delete user if pegawai has a user
             if ($pegawai->id_user) {
                 $user = User::find($pegawai->id_user);
@@ -297,19 +305,19 @@ class PegawaiController extends Controller
             
             \DB::commit();
             
-            return response()->json([
-                'status' => 'success',
-                'message' => 'Pegawai berhasil dihapus'
-            ]);
+            return $this->successResponse(
+                $responseData,
+                'Data pegawai berhasil dihapus'
+            );
             
         } catch (\Exception $e) {
             \DB::rollback();
             
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Terjadi kesalahan saat menghapus pegawai',
-                'error' => $e->getMessage()
-            ], 500);
+            return $this->errorResponse(
+                'Gagal menghapus data pegawai',
+                500,
+                ['error' => $e->getMessage()]
+            );
         }
     }
 

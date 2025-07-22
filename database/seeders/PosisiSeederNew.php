@@ -16,31 +16,37 @@ class PosisiSeederNew extends Seeder
             [
                 'nama_posisi' => 'Dokter ',
                 'gaji_pokok' => 20000000.00,
+                'gaji_absensi' => 500000.00,
                 'persen_bonus' => 5.00,
             ],
             [
                 'nama_posisi' => 'Beautician',
                 'gaji_pokok' => 8000000.00,
+                'gaji_absensi' => 250000.00,
                 'persen_bonus' => 3.00,
             ],
             [
                 'nama_posisi' => 'HRD Manager',
                 'gaji_pokok' => 12000000.00,
+                'gaji_absensi' => 350000.00,
                 'persen_bonus' => 0.00,
             ],
             [
                 'nama_posisi' => 'Front Office',
                 'gaji_pokok' => 5000000.00,
+                'gaji_absensi' => 200000.00,
                 'persen_bonus' => 0.00,
             ],
             [
                 'nama_posisi' => 'Kasir',
                 'gaji_pokok' => 4500000.00,
+                'gaji_absensi' => 180000.00,
                 'persen_bonus' => 0.00,
             ],
             [
                 'nama_posisi' => 'Admin',
                 'gaji_pokok' => 7000000.00,
+                'gaji_absensi' => 220000.00,
                 'persen_bonus' => 0.00,
             ],
         ];

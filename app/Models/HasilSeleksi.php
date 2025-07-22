@@ -30,7 +30,7 @@ class HasilSeleksi extends Model
      */
     protected $fillable = [
         'id_user',
-        'id_lowongan_pekerjaan',
+        'id_lamaran_pekerjaan',
         'status',
         'catatan',
     ];
@@ -44,11 +44,11 @@ class HasilSeleksi extends Model
     }
 
     /**
-     * Get the lowongan pekerjaan that owns the hasil seleksi.
+     * Get the lamaran pekerjaan that owns the hasil seleksi.
      */
-    public function lowonganPekerjaan()
+    public function lamaranPekerjaan()
     {
-        return $this->belongsTo(LowonganPekerjaan::class, 'id_lowongan_pekerjaan', 'id_lowongan_pekerjaan');
+        return $this->belongsTo(LamaranPekerjaan::class, 'id_lamaran_pekerjaan', 'id_lamaran_pekerjaan');
     }
 
     /**

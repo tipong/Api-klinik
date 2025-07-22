@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\Gaji;
 use App\Models\Pegawai;
 use App\Models\Absensi;
+use App\Models\Dokter;
+use App\Models\Beautician;
 use App\Traits\ApiResponseTrait;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
@@ -64,10 +66,13 @@ class GajiController extends Controller
             $endDate = $startDate->copy()->endOfMonth();
             
             $jumlahAbsensi = Absensi::where('id_pegawai', $item->id_pegawai)
-                                ->whereBetween('tanggal', [$startDate->format('Y-m-d'), $endDate->format('Y-m-d')])
+                                ->whereBetween('tanggal_absensi', [$startDate->format('Y-m-d'), $endDate->format('Y-m-d')])
+                                ->where('status', 'Hadir')
                                 ->count();
             
-            $totalHariKerja = (int) $startDate->diffInDays($endDate) + 1;
+            $totalHariKerja = $startDate->diffInDaysFiltered(function(Carbon $date) {
+                return $date->isWeekday();
+            }, $endDate);
 
             $item->jumlah_absensi = $jumlahAbsensi;
             $item->total_hari_kerja = $totalHariKerja;
@@ -227,21 +232,36 @@ class GajiController extends Controller
      */
     public function destroy(string $id)
     {
-        $gaji = Gaji::find($id);
-        
-        if (!$gaji) {
-            return response()->json([
-                'status' => 'gagal',
-                'pesan' => 'Gaji tidak ditemukan'
-            ], 404);
+        try {
+            $gaji = Gaji::find($id);
+            
+            if (!$gaji) {
+                return $this->errorResponse('Data gaji tidak ditemukan', 404, []);
+            }
+            
+            // Store data for response before deletion
+            $responseData = [
+                'id_gaji' => $gaji->id_gaji,
+                'pegawai' => $gaji->pegawai->nama_lengkap ?? 'Unknown',
+                'periode_bulan' => $gaji->periode_bulan,
+                'periode_tahun' => $gaji->periode_tahun,
+                'total_gaji' => $gaji->total_gaji
+            ];
+            
+            $gaji->delete();
+            
+            return $this->successResponse(
+                $responseData,
+                'Data gaji berhasil dihapus'
+            );
+            
+        } catch (\Exception $e) {
+            return $this->errorResponse(
+                'Gagal menghapus data gaji',
+                500,
+                ['error' => $e->getMessage()]
+            );
         }
-        
-        $gaji->delete();
-        
-        return response()->json([
-            'status' => 'sukses',
-            'pesan' => 'Gaji berhasil dihapus'
-        ]);
     }
 
     /**
@@ -297,7 +317,8 @@ class GajiController extends Controller
             }, $endDate);
             
             $kehadiran = Absensi::where('id_pegawai', $p->id_pegawai)
-                               ->whereBetween('tanggal', [$startDate->format('Y-m-d'), $endDate->format('Y-m-d')])
+                               ->whereBetween('tanggal_absensi', [$startDate->format('Y-m-d'), $endDate->format('Y-m-d')])
+                               ->where('status', 'Hadir')
                                ->count();
             
             // Get posisi and calculate gaji
@@ -307,24 +328,37 @@ class GajiController extends Controller
                 continue;
             }
             
-            // Get gaji pokok from posisi
-            $gajiPokok = $posisi->gaji_pokok;
+            // Get effective gaji pokok - prioritize gaji_pokok_tambahan
+            $gajiPokok = $p->getGajiPokokEfektif();
             
             // Calculate bonus based on percentage from posisi * total booking treatment prices for the month
-            $totalBookingTreatment = BookingTreatment::where('status_booking_treatment', 'Selesai')
-                                                   ->whereYear('waktu_treatment', $tahun)
-                                                   ->whereMonth('waktu_treatment', $bulan)
-                                                   ->where(function($query) use ($p) {
-                                                       $query->where('id_dokter', $p->id_pegawai)
-                                                             ->orWhere('id_beautician', $p->id_pegawai);
-                                                   })
-                                                   ->sum('harga_total');
+            $totalBookingTreatment = 0;
+            
+            // Check if pegawai is a doctor
+            $dokter = \App\Models\Dokter::where('id_pegawai', $p->id_pegawai)->first();
+            if ($dokter) {
+                $totalBookingTreatment += BookingTreatment::where('status_booking_treatment', 'Selesai')
+                                                         ->whereYear('waktu_treatment', $tahun)
+                                                         ->whereMonth('waktu_treatment', $bulan)
+                                                         ->where('id_dokter', $dokter->id_dokter)
+                                                         ->sum('harga_total');
+            }
+            
+            // Check if pegawai is a beautician
+            $beautician = \App\Models\Beautician::where('id_pegawai', $p->id_pegawai)->first();
+            if ($beautician) {
+                $totalBookingTreatment += BookingTreatment::where('status_booking_treatment', 'Selesai')
+                                                         ->whereYear('waktu_treatment', $tahun)
+                                                         ->whereMonth('waktu_treatment', $bulan)
+                                                         ->where('id_beautician', $beautician->id_beautician)
+                                                         ->sum('harga_total');
+            }
             
             $bonusPercentage = $posisi->persen_bonus / 100;
             $gajiBonus = $totalBookingTreatment * $bonusPercentage;
             
-            // Calculate attendance salary: 100,000 * number of attendances in the month
-            $gajiKehadiran = $kehadiran * 100000;
+            // Calculate attendance salary: total absensi * gaji_absensi dari posisi
+            $gajiKehadiran = $kehadiran * $posisi->gaji_absensi;
             
             // Total
             $gajiTotal = $gajiPokok + $gajiBonus + $gajiKehadiran;
@@ -435,20 +469,33 @@ class GajiController extends Controller
                 $gajiPokok = $posisi->gaji_pokok;
                 
                 // Calculate bonus based on percentage from posisi * total booking treatment prices for the month
-                $totalBookingTreatment = BookingTreatment::where('status_booking_treatment', 'Selesai')
-                                                       ->whereYear('waktu_treatment', $tahun)
-                                                       ->whereMonth('waktu_treatment', $bulan)
-                                                       ->where(function($query) use ($p) {
-                                                           $query->where('id_dokter', $p->id_pegawai)
-                                                                 ->orWhere('id_beautician', $p->id_pegawai);
-                                                       })
-                                                       ->sum('harga_total');
+                $totalBookingTreatment = 0;
+                
+                // Check if pegawai is a doctor
+                $dokter = Dokter::where('id_pegawai', $p->id_pegawai)->first();
+                if ($dokter) {
+                    $totalBookingTreatment += BookingTreatment::where('status_booking_treatment', 'Selesai')
+                                                             ->whereYear('waktu_treatment', $tahun)
+                                                             ->whereMonth('waktu_treatment', $bulan)
+                                                             ->where('id_dokter', $dokter->id_dokter)
+                                                             ->sum('harga_total');
+                }
+                
+                // Check if pegawai is a beautician
+                $beautician = Beautician::where('id_pegawai', $p->id_pegawai)->first();
+                if ($beautician) {
+                    $totalBookingTreatment += BookingTreatment::where('status_booking_treatment', 'Selesai')
+                                                             ->whereYear('waktu_treatment', $tahun)
+                                                             ->whereMonth('waktu_treatment', $bulan)
+                                                             ->where('id_beautician', $beautician->id_beautician)
+                                                             ->sum('harga_total');
+                }
                 
                 $bonusPercentage = $posisi->persen_bonus / 100;
                 $gajiBonus = $totalBookingTreatment * $bonusPercentage;
                 
-                // Calculate attendance salary: 100,000 * number of attendances in the month
-                $gajiKehadiran = $kehadiran * 100000;
+                // Calculate attendance salary: total absensi * gaji_absensi dari posisi
+                $gajiKehadiran = $kehadiran * $posisi->gaji_absensi;
                 
                 // Total
                 $gajiTotal = $gajiPokok + $gajiBonus + $gajiKehadiran;

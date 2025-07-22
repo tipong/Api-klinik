@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Traits\ApiResponseTrait;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -11,6 +12,7 @@ use Illuminate\Support\Facades\Validator;
 
 class AuthController extends Controller
 {
+    use ApiResponseTrait;
     /**
      * Register a new user
      */
@@ -453,39 +455,82 @@ class AuthController extends Controller
     public function deleteUser(Request $request, $id)
     {
         try {
-            $user = $request->user();
+            $currentUser = $request->user();
             
-            if ($user->role !== 'admin') {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => 'Unauthorized. Only admin can delete users.',
-                ], 403);
+            if ($currentUser->role !== 'admin') {
+                return $this->errorResponse('Unauthorized. Only admin can delete users.', 403, []);
             }
 
             // Don't allow admin to delete themselves
-            if ($user->id == $id) {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => 'You cannot delete your own account.',
-                ], 422);
+            if ($currentUser->id == $id) {
+                return $this->errorResponse('You cannot delete your own account.', 422, []);
             }
 
-            return response()->json([
-                'status' => 'success',
-                'message' => 'User deleted successfully',
-                'data' => [
-                    'deleted_user_id' => $id,
-                    'deleted_at' => now(),
-                    'deleted_by' => $user->id,
-                ],
-            ]);
+            $userToDelete = User::find($id);
+            
+            if (!$userToDelete) {
+                return $this->errorResponse('User tidak ditemukan', 404, []);
+            }
+            
+            // Store data for response before deletion
+            $responseData = [
+                'id_user' => $userToDelete->id_user,
+                'nama_user' => $userToDelete->nama_user,
+                'email' => $userToDelete->email,
+                'role' => $userToDelete->role,
+                'deleted_at' => now(),
+                'deleted_by' => $currentUser->id,
+            ];
+            
+            $userToDelete->delete();
+
+            return $this->successResponse(
+                $responseData,
+                'User berhasil dihapus'
+            );
 
         } catch (\Exception $e) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Failed to delete user',
-                'error' => $e->getMessage(),
-            ], 500);
+            return $this->errorResponse(
+                'Gagal menghapus user',
+                500,
+                ['error' => $e->getMessage()]
+            );
+        }
+    }
+
+    /**
+     * Public delete method for frontend integration (no auth required)
+     */
+    public function publicDeleteUser($id)
+    {
+        try {
+            $userToDelete = User::find($id);
+            
+            if (!$userToDelete) {
+                return $this->errorResponse('User tidak ditemukan', 404, []);
+            }
+            
+            // Store data for response before deletion
+            $responseData = [
+                'id_user' => $userToDelete->id_user,
+                'nama_user' => $userToDelete->nama_user,
+                'email' => $userToDelete->email,
+                'role' => $userToDelete->role
+            ];
+            
+            $userToDelete->delete();
+
+            return $this->successResponse(
+                $responseData,
+                'User berhasil dihapus'
+            );
+
+        } catch (\Exception $e) {
+            return $this->errorResponse(
+                'Gagal menghapus user',
+                500,
+                ['error' => $e->getMessage()]
+            );
         }
     }
 

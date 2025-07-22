@@ -18,18 +18,22 @@ class DatabaseSeeder extends Seeder
             UserSeederNew::class,
             PosisiSeederNew::class,
             PegawaiSeederNew::class,
-            AbsensiSeederNew::class,
-            GajiSeederNew::class,
-            LowonganPekerjaanSeederNew::class,
-            LamaranPekerjaanSeederNew::class,
             
-            // Beauty Clinic Tables
+            // Beauty Clinic Core Tables
             DokterSeederNew::class,
             BeauticianSeederNew::class,
             JenisTreatmentSeederNew::class,
             TreatmentSeederNew::class,
             PromoSeederNew::class,
+            
+            // Booking System (requires doctors and beauticians)
             BookingTreatmentSeederNew::class,
+            
+            // Attendance System (requires pegawai)
+            AbsensiSeeder::class,
+            
+            // Training System
+            PelatihanSeeder::class,
         ]);
     }
 }

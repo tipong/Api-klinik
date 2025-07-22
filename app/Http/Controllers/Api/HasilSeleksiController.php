@@ -19,7 +19,7 @@ class HasilSeleksiController extends Controller
     public function index(Request $request)
     {
         $user = $request->user();
-        $query = HasilSeleksi::with(['user', 'lowonganPekerjaan.posisi']);
+        $query = HasilSeleksi::with(['user', 'lamaranPekerjaan.lowonganPekerjaan.posisi']);
         
         // Filter by specific lamaran ID if provided
         if ($request->filled('id_hasil_seleksi')) {
@@ -31,9 +31,9 @@ class HasilSeleksiController extends Controller
             $query->where('id_user', $user->id_user);
         }
         
-        // Filter by lowongan
-        if ($request->filled('id_lowongan_pekerjaan')) {
-            $query->where('id_lowongan_pekerjaan', $request->id_lowongan_pekerjaan);
+        // Filter by lamaran pekerjaan
+        if ($request->filled('id_lamaran_pekerjaan')) {
+            $query->where('id_lamaran_pekerjaan', $request->id_lamaran_pekerjaan);
         }
         
         // Filter by status
@@ -83,7 +83,7 @@ class HasilSeleksiController extends Controller
         try {
             $validator = Validator::make($request->all(), [
                 'id_user' => 'required|exists:tb_user,id_user',
-                'id_lowongan_pekerjaan' => 'required|exists:tb_lowongan_pekerjaan,id_lowongan_pekerjaan',
+                'id_lamaran_pekerjaan' => 'required|exists:tb_lamaran_pekerjaan,id_lamaran_pekerjaan',
                 'status' => 'required|in:pending,diterima,ditolak',
                 'catatan' => 'nullable|string|max:500',
             ]);
@@ -92,19 +92,19 @@ class HasilSeleksiController extends Controller
                 return $this->validationErrorResponse($validator->errors());
             }
             
-            // Check if hasil seleksi for this user and lowongan already exists
+            // Check if hasil seleksi for this user and lamaran already exists
             $existingHasil = HasilSeleksi::where('id_user', $request->id_user)
-                                      ->where('id_lowongan_pekerjaan', $request->id_lowongan_pekerjaan)
+                                      ->where('id_lamaran_pekerjaan', $request->id_lamaran_pekerjaan)
                                       ->first();
                                       
             if ($existingHasil) {
-                return $this->errorResponse('Hasil seleksi untuk user dan lowongan ini sudah ada', 400);
+                return $this->errorResponse('Hasil seleksi untuk user dan lamaran ini sudah ada', 400);
             }
             
             $hasilSeleksi = HasilSeleksi::create($request->all());
             
             return $this->successResponse(
-                $hasilSeleksi->load(['user', 'lowonganPekerjaan.posisi']),
+                $hasilSeleksi->load(['user', 'lamaranPekerjaan.lowonganPekerjaan.posisi']),
                 'Hasil seleksi berhasil ditambahkan',
                 201
             );

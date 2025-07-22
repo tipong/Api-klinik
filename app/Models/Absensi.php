@@ -39,8 +39,9 @@ class Absensi extends Model
         'id_pegawai',
         'jam_masuk',
         'jam_keluar',
-        'tanggal',
+        'tanggal_absensi',
         'status',
+        'keterangan',
     ];
 
     /**
@@ -49,7 +50,7 @@ class Absensi extends Model
      * @var array<string, string>
      */
     protected $casts = [
-        'tanggal' => 'date',
+        'tanggal_absensi' => 'date',
         'jam_masuk' => 'datetime:H:i:s',
         'jam_keluar' => 'datetime:H:i:s',
         'created_at' => 'datetime',
@@ -69,7 +70,7 @@ class Absensi extends Model
      */
     public function isToday()
     {
-        return $this->tanggal->isToday();
+        return $this->tanggal_absensi->isToday();
     }
 
     /**
@@ -77,7 +78,7 @@ class Absensi extends Model
      */
     public function getFormattedDateAttribute()
     {
-        return $this->tanggal->format('d/m/Y');
+        return $this->tanggal_absensi->format('d/m/Y');
     }
 
     /**
@@ -86,6 +87,6 @@ class Absensi extends Model
     public function getDayNameAttribute()
     {
         $days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
-        return $days[$this->tanggal->dayOfWeek];
+        return $days[$this->tanggal_absensi->dayOfWeek];
     }
 }

@@ -62,6 +62,20 @@ class AbsensiController extends Controller
         $user = $request->user();
         $query = Absensi::with(['pegawai.user', 'pegawai.posisi']);
         
+        // Handle public access (when user is null)
+        if (!$user) {
+            // For public access, return all records (for testing purposes)
+            $absensi = $query->orderBy('tanggal', 'desc')
+                           ->orderBy('jam_masuk', 'desc')
+                           ->paginate(15);
+            
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Data absensi berhasil diambil',
+                'data' => $absensi
+            ]);
+        }
+        
         // Log request untuk debugging
         \Log::info('Absensi API Request', [
             'user_id' => $user->id_user,
@@ -85,17 +99,17 @@ class AbsensiController extends Controller
         
         // Date filter
         if ($request->filled('tanggal')) {
-            $query->whereDate('tanggal', $request->tanggal);
+            $query->whereDate('tanggal_absensi', $request->tanggal);
         }
         
         // Month filter
         if ($request->filled('bulan')) {
-            $query->whereMonth('tanggal', $request->bulan);
+            $query->whereMonth('tanggal_absensi', $request->bulan);
         }
         
         // Year filter
         if ($request->filled('tahun')) {
-            $query->whereYear('tanggal', $request->tahun);
+            $query->whereYear('tanggal_absensi', $request->tahun);
         }
         
         // Status filter (only for admin/HRD)
@@ -139,7 +153,7 @@ class AbsensiController extends Controller
             }
         }
         
-        $absensi = $query->orderBy('tanggal', 'desc')->paginate(15);
+        $absensi = $query->orderBy('tanggal_absensi', 'desc')->paginate(15);
         
         \Log::info('Absensi query result', [
             'total_records' => $absensi->total(),
@@ -171,7 +185,7 @@ class AbsensiController extends Controller
         
         // Check if user already has attendance for today
         $existingAbsensi = Absensi::where('id_pegawai', $pegawai->id_pegawai)
-                                  ->whereDate('tanggal', $today)
+                                  ->whereDate('tanggal_absensi', $today)
                                   ->first();
         
         if ($existingAbsensi) {
@@ -184,6 +198,7 @@ class AbsensiController extends Controller
         
         $validator = Validator::make($request->all(), [
             'status' => 'nullable|in:Hadir,Sakit,Izin,Alpa',
+            'keterangan' => 'nullable|string|max:500',
         ]);
         
         if ($validator->fails()) {
@@ -198,9 +213,10 @@ class AbsensiController extends Controller
         
         $absensi = Absensi::create([
             'id_pegawai' => $pegawai->id_pegawai,
-            'tanggal' => $today,
+            'tanggal_absensi' => $today,
             'jam_masuk' => $checkInTime->format('H:i:s'),
             'status' => $request->status ?? 'Hadir',
+            'keterangan' => $request->keterangan,
         ]);
         
         return response()->json([
@@ -306,6 +322,7 @@ class AbsensiController extends Controller
             'jam_masuk'  => 'required|date_format:H:i:s',
             'jam_keluar' => 'nullable|date_format:H:i:s',
             'status'     => 'required|in:Hadir,Sakit,Izin,Alpa',
+            'keterangan' => 'nullable|string|max:500',
         ]);
 
         if ($validator->fails()) {
@@ -330,11 +347,12 @@ class AbsensiController extends Controller
             return $this->errorResponse('Anda tidak memiliki akses untuk memperbarui absensi ini', 403);
         }
 
-        // 4. Simpan perubahan (tanpa keterangan)
-        $absensi->tanggal    = $request->tanggal;
+        // 4. Simpan perubahan (dengan keterangan)
+        $absensi->tanggal_absensi = $request->tanggal;
         $absensi->jam_masuk  = $request->jam_masuk;
         $absensi->jam_keluar = $request->jam_keluar;
         $absensi->status     = $request->status;
+        $absensi->keterangan = $request->keterangan;
         $absensi->save();
 
         // 5. Respons sukses
@@ -376,7 +394,7 @@ class AbsensiController extends Controller
         
         $today = Carbon::today();
         $todayAbsensi = Absensi::where('id_pegawai', $pegawai->id_pegawai)
-                               ->whereDate('tanggal', $today)
+                               ->whereDate('tanggal_absensi', $today)
                                ->first();
         
         if (!$todayAbsensi) {
@@ -407,5 +425,42 @@ class AbsensiController extends Controller
                 'work_duration' => $hasCheckedOut ? $this->calculateWorkDuration($todayAbsensi->jam_masuk, $todayAbsensi->jam_keluar) : null
             ]
         ]);
+    }
+    
+    /**
+     * Delete specific attendance record
+     */
+    public function destroy($id)
+    {
+        try {
+            $absensi = Absensi::find($id);
+            
+            if (!$absensi) {
+                return $this->errorResponse('Data absensi tidak ditemukan', 404, []);
+            }
+            
+            // Store data for response before deletion
+            $responseData = [
+                'id_absensi' => $absensi->id_absensi,
+                'pegawai' => $absensi->pegawai->nama_lengkap ?? 'Unknown',
+                'tanggal' => $absensi->tanggal,
+                'jam_masuk' => $absensi->jam_masuk,
+                'jam_keluar' => $absensi->jam_keluar
+            ];
+            
+            $absensi->delete();
+            
+            return $this->successResponse(
+                $responseData,
+                'Data absensi berhasil dihapus'
+            );
+            
+        } catch (\Exception $e) {
+            return $this->errorResponse(
+                'Gagal menghapus data absensi',
+                500,
+                ['error' => $e->getMessage()]
+            );
+        }
     }
 }

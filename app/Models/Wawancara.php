@@ -34,7 +34,7 @@ class Wawancara extends Model
         'tanggal_wawancara',
         'lokasi',
         'catatan',
-        'hasil',
+        'status',
     ];
 
     /**

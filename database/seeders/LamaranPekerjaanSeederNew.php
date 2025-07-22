@@ -24,8 +24,7 @@ class LamaranPekerjaanSeederNew extends Seeder
                 'alamat_pelamar' => 'Jl. Kebon Jeruk No. 123, Jakarta Barat',
                 'pendidikan_terakhir' => 'SMA',
                 'CV' => null, // Binary data, using null for seeder
-                'status_lamaran' => 'pending',
-                'status_seleksi' => 'Menunggu review',
+                'status' => 'pending',
             ],
             [
                 'id_lowongan_pekerjaan' => 1, // Front Office
@@ -37,8 +36,7 @@ class LamaranPekerjaanSeederNew extends Seeder
                 'alamat_pelamar' => 'Jl. Cempaka Putih No. 456, Jakarta Pusat',
                 'pendidikan_terakhir' => 'SMK',
                 'CV' => null,
-                'status_lamaran' => 'diterima',
-                'status_seleksi' => 'Lulus seleksi administrasi dan wawancara',
+                'status' => 'pending',
             ],
             [
                 'id_lowongan_pekerjaan' => 2, // Beautician Junior
@@ -50,8 +48,7 @@ class LamaranPekerjaanSeederNew extends Seeder
                 'alamat_pelamar' => 'Jl. Melati No. 789, Jakarta Selatan',
                 'pendidikan_terakhir' => 'SMK Kecantikan',
                 'CV' => null,
-                'status_lamaran' => 'ditolak',
-                'status_seleksi' => 'Tidak memenuhi syarat pengalaman',
+                'status' => 'ditolak',
             ],
             [
                 'id_lowongan_pekerjaan' => 2, // Beautician Junior
@@ -63,8 +60,7 @@ class LamaranPekerjaanSeederNew extends Seeder
                 'alamat_pelamar' => 'Jl. Anggrek No. 321, Jakarta Timur',
                 'pendidikan_terakhir' => 'D3 Tata Rias',
                 'CV' => null,
-                'status_lamaran' => 'pending',
-                'status_seleksi' => 'Tahap wawancara',
+                'status' => 'pending',
             ],
             [
                 'id_lowongan_pekerjaan' => 3, // Kasir
@@ -76,8 +72,7 @@ class LamaranPekerjaanSeederNew extends Seeder
                 'alamat_pelamar' => 'Jl. Mawar No. 654, Jakarta Utara',
                 'pendidikan_terakhir' => 'SMA',
                 'CV' => null,
-                'status_lamaran' => 'diterima',
-                'status_seleksi' => 'Siap untuk onboarding',
+                'status' => 'pending',
             ],
             [
                 'id_lowongan_pekerjaan' => 4, // Cleaning Service
@@ -89,8 +84,7 @@ class LamaranPekerjaanSeederNew extends Seeder
                 'alamat_pelamar' => 'Jl. Kenanga No. 987, Jakarta Barat',
                 'pendidikan_terakhir' => 'SMP',
                 'CV' => null,
-                'status_lamaran' => 'pending',
-                'status_seleksi' => 'Review dokumen',
+                'status' => 'pending',
             ],
         ];
 

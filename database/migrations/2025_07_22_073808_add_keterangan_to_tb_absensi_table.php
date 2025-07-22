@@ -11,8 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('tb_pelatihan', function (Blueprint $table) {
-            $table->dropColumn('is_active');
+        Schema::table('tb_absensi', function (Blueprint $table) {
+            $table->text('keterangan')->nullable()->after('status');
         });
     }
 
@@ -21,8 +21,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('tb_pelatihan', function (Blueprint $table) {
-            $table->boolean('is_active')->default(true)->after('durasi');
+        Schema::table('tb_absensi', function (Blueprint $table) {
+            $table->dropColumn('keterangan');
         });
     }
 };

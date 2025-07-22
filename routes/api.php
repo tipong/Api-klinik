@@ -25,6 +25,24 @@ Route::prefix('lowongan')->group(function () {
     Route::get('/{id}', [LowonganPekerjaanController::class, 'show']);
 });
 
+// Public Master Gaji routes for frontend integration
+Route::prefix('master-gaji')->group(function () {
+    Route::get('/', [App\Http\Controllers\Api\MasterGajiController::class, 'index']);
+    Route::get('/{id}', [App\Http\Controllers\Api\MasterGajiController::class, 'show']);
+    Route::put('/{id}', [App\Http\Controllers\Api\MasterGajiController::class, 'update']);
+    Route::post('/{id}/reset', [App\Http\Controllers\Api\MasterGajiController::class, 'resetCustomSalary']);
+});
+
+// Public Delete Routes for frontend integration (without auth middleware)
+Route::prefix('public')->group(function () {
+    Route::get('/absensi', [AbsensiController::class, 'index']); // For testing
+    Route::delete('/absensi/{id}', [AbsensiController::class, 'destroy']);
+    Route::delete('/gaji/{id}', [GajiController::class, 'destroy']);
+    Route::delete('/lowongan-pekerjaan/{id}', [LowonganPekerjaanController::class, 'publicDestroy']);
+    Route::delete('/pegawai/{id}', [PegawaiController::class, 'destroy']);
+    Route::delete('/users/{id}', [AuthController::class, 'publicDeleteUser']);
+});
+
 // Protected routes
 Route::middleware('auth:sanctum')->group(function () {
     // Auth routes

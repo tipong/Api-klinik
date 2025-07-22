@@ -49,9 +49,9 @@ class WawancaraController extends Controller
                 $query->where('tanggal_wawancara', '<=', $request->tanggal_sampai);
             }
             
-            // Filter by hasil
-            if ($request->filled('hasil')) {
-                $query->where('hasil', $request->hasil);
+            // Filter by status
+            if ($request->filled('status')) {
+                $query->where('status', $request->status);
             }
             
             $wawancara = $query->orderBy('tanggal_wawancara', 'desc')->paginate(15);
@@ -75,7 +75,7 @@ class WawancaraController extends Controller
                 'tanggal_wawancara' => 'required|date|after:now',
                 'lokasi' => 'required|string|max:255',
                 'catatan' => 'nullable|string|max:500',
-                'hasil' => 'nullable|in:pending,diterima,ditolak',
+                'status' => 'nullable|in:terjadwal,lulus,tidak_lulus',
             ]);
             
             if ($validator->fails()) {
@@ -95,7 +95,7 @@ class WawancaraController extends Controller
             }
             
             $wawancara = Wawancara::create(array_merge($request->all(), [
-                'hasil' => $request->hasil ?? 'pending'
+                'status' => $request->status ?? 'terjadwal'
             ]));
             
             return $this->successResponse(
@@ -151,7 +151,7 @@ class WawancaraController extends Controller
                 'tanggal_wawancara' => 'sometimes|required|date',
                 'lokasi' => 'sometimes|required|string|max:255',
                 'catatan' => 'nullable|string|max:500',
-                'hasil' => 'sometimes|required|in:pending,diterima,ditolak',
+                'status' => 'sometimes|required|in:terjadwal,lulus,tidak_lulus',
             ]);
             
             if ($validator->fails()) {
@@ -162,7 +162,7 @@ class WawancaraController extends Controller
                 'tanggal_wawancara',
                 'lokasi',
                 'catatan',
-                'hasil'
+                'status'
             ]));
             
             return $this->successResponse(
@@ -252,7 +252,7 @@ class WawancaraController extends Controller
             }
             
             $validator = Validator::make($request->all(), [
-                'hasil' => 'required|in:pending,diterima,ditolak',
+                'status' => 'required|in:terjadwal,lulus,tidak_lulus',
                 'catatan' => 'nullable|string|max:500',
             ]);
             
@@ -261,13 +261,13 @@ class WawancaraController extends Controller
             }
             
             $wawancara->update([
-                'hasil' => $request->hasil,
+                'status' => $request->status,
                 'catatan' => $request->catatan
             ]);
             
             return $this->successResponse(
                 $wawancara->fresh(['lamaranPekerjaan.lowonganPekerjaan.posisi', 'user']),
-                'Hasil wawancara berhasil diperbarui'
+                'Status wawancara berhasil diperbarui'
             );
             
         } catch (\Exception $e) {

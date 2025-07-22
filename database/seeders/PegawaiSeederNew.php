@@ -28,6 +28,7 @@ class PegawaiSeederNew extends Seeder
                 'id_posisi' => 6, // Admin
                 'agama' => 'Islam',
                 'tanggal_masuk' => '2024-01-01',
+                'gaji_pokok_tambahan' => 15000000, // Custom salary
             ],
             [
                 'id_user' => 2, // HRD Manager
@@ -42,6 +43,7 @@ class PegawaiSeederNew extends Seeder
                 'id_posisi' => 3, // HRD Manager
                 'agama' => 'Islam',
                 'tanggal_masuk' => '2024-01-15',
+                'gaji_pokok_tambahan' => 0, // Use default from posisi
             ],
             [
                 'id_user' => 3, // Dr. Ahmad
@@ -56,6 +58,7 @@ class PegawaiSeederNew extends Seeder
                 'id_posisi' => 1, // Dokter Spesialis
                 'agama' => 'Islam',
                 'tanggal_masuk' => '2024-02-01',
+                'gaji_pokok_tambahan' => 25000000, // Custom higher salary for senior doctor
             ],
             [
                 'id_user' => 4, // Dr. Sari
@@ -70,6 +73,7 @@ class PegawaiSeederNew extends Seeder
                 'id_posisi' => 1, // Dokter Spesialis
                 'agama' => 'Kristen',
                 'tanggal_masuk' => '2024-02-15',
+                'gaji_pokok_tambahan' => 0, // Use default from posisi
             ],
             [
                 'id_user' => 5, // Maria Beautician
@@ -84,6 +88,7 @@ class PegawaiSeederNew extends Seeder
                 'id_posisi' => 2, // Beautician Senior
                 'agama' => 'Katolik',
                 'tanggal_masuk' => '2024-03-01',
+                'gaji_pokok_tambahan' => 8000000, // Custom salary for senior beautician
             ],
             [
                 'id_user' => 6, // Linda Beautician
@@ -98,6 +103,7 @@ class PegawaiSeederNew extends Seeder
                 'id_posisi' => 2, // Beautician Junior
                 'agama' => 'Islam',
                 'tanggal_masuk' => '2024-03-15',
+                'gaji_pokok_tambahan' => 0, // Use default from posisi
             ],
             [
                 'id_user' => 7, // Rina Front Office
@@ -112,6 +118,7 @@ class PegawaiSeederNew extends Seeder
                 'id_posisi' => 4, // Front Office
                 'agama' => 'Islam',
                 'tanggal_masuk' => '2024-04-01',
+                'gaji_pokok_tambahan' => 0, // Use default from posisi
             ],
             [
                 'id_user' => 8, // Devi Kasir
@@ -126,6 +133,7 @@ class PegawaiSeederNew extends Seeder
                 'id_posisi' => 5, // Kasir
                 'agama' => 'Islam',
                 'tanggal_masuk' => '2024-04-15',
+                'gaji_pokok_tambahan' => 0, // Use default from posisi
             ],
         ];
 

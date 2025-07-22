@@ -1,0 +1,613 @@
+{
+	"info": {
+		"_postman_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+		"name": "Klinik HRD Gaji System API Testing",
+		"description": "Collection untuk testing sistem gaji HRD yang telah diupdate dengan gaji_absensi dan sistem bonus yang fleksibel",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Authentication",
+			"item": [
+				{
+					"name": "Login Admin",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    if (response.status === 'success') {",
+									"        pm.environment.set('token', response.data.token);",
+									"        pm.test('Login successful', function () {",
+									"            pm.expect(response.data.token).to.not.be.undefined;",
+									"        });",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"admin@klinik.com\",\n    \"password\": \"admin123\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/auth/login",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"login"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Login HRD Manager",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"hrd@klinik.com\",\n    \"password\": \"hrd123\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/auth/login",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"login"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Login Doctor",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"dokter1@klinik.com\",\n    \"password\": \"dokter123\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/auth/login",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"login"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Master Gaji Pegawai",
+			"item": [
+				{
+					"name": "Get All Master Gaji",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/master-gaji",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"master-gaji"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Master Gaji by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/master-gaji/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"master-gaji",
+								"1"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Master Gaji (Gaji Pokok Only)",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"gaji_pokok_tambahan\": 18000000\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/master-gaji/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"master-gaji",
+								"1"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Master Gaji (All Fields)",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"gaji_pokok_tambahan\": 20000000,\n    \"persen_bonus\": 3.5,\n    \"gaji_absensi\": 300000\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/master-gaji/3",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"master-gaji",
+								"3"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Reset Custom Salary",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/master-gaji/1/reset",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"master-gaji",
+								"1",
+								"reset"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Gaji Management",
+			"item": [
+				{
+					"name": "Generate Gaji",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"periode_bulan\": 7,\n    \"periode_tahun\": 2025\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/gaji/generate",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"gaji",
+								"generate"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get All Gaji",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/gaji",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"gaji"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Gaji by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/gaji/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"gaji",
+								"1"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Preview Gaji Calculation",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/gaji/preview?periode_bulan=8&periode_tahun=2025",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"gaji",
+								"preview"
+							],
+							"query": [
+								{
+									"key": "periode_bulan",
+									"value": "8"
+								},
+								{
+									"key": "periode_tahun",
+									"value": "2025"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Gaji Status",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"status\": \"Terbayar\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/gaji/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"gaji",
+								"1"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Absensi",
+			"item": [
+				{
+					"name": "Get All Absensi",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/absensi",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"absensi"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Absensi by Pegawai",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/absensi/pegawai/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"absensi",
+								"pegawai",
+								"1"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Pegawai",
+			"item": [
+				{
+					"name": "Get All Pegawai",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/pegawai",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"pegawai"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Pegawai by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/pegawai/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"pegawai",
+								"1"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Posisi",
+			"item": [
+				{
+					"name": "Get All Posisi",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/posisi",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"posisi"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://127.0.0.1:8888",
+			"type": "string"
+		}
+	]
+}

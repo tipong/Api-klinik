@@ -38,8 +38,8 @@ class LamaranPekerjaanController extends Controller
         }
         
         // Filter by status
-        if ($request->filled('status_lamaran')) {
-            $query->where('status_lamaran', $request->status_lamaran);
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
         }
         
         // Search by name
@@ -120,7 +120,7 @@ class LamaranPekerjaanController extends Controller
             'alamat_pelamar' => $request->alamat_pelamar,
             'pendidikan_terakhir' => $request->pendidikan_terakhir,
             'CV' => $cvContent,
-            'status_lamaran' => 'pending',
+            'status' => 'pending',
         ]);
         
         return response()->json([
@@ -189,8 +189,7 @@ class LamaranPekerjaanController extends Controller
         }
         
         $validator = Validator::make($request->all(), [
-            'status_lamaran' => 'required|in:pending,diterima,ditolak',
-            'status_seleksi' => 'nullable|string|max:50',
+            'status' => 'required|in:pending,diterima,ditolak',
         ]);
         
         if ($validator->fails()) {
@@ -202,8 +201,7 @@ class LamaranPekerjaanController extends Controller
         }
         
         $lamaran->update($request->only([
-            'status_lamaran',
-            'status_seleksi',
+            'status',
         ]));
         
         return response()->json([

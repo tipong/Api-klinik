@@ -38,8 +38,7 @@ class LamaranPekerjaan extends Model
         'alamat_pelamar',
         'pendidikan_terakhir',
         'CV',
-        'status_lamaran',
-        'status_seleksi',
+        'status',
     ];
 
     /**

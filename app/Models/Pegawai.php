@@ -42,6 +42,7 @@ class Pegawai extends Model
         'agama',
         'tanggal_masuk',
         'tanggal_keluar',
+        'gaji_pokok_tambahan',
     ];
 
     /**
@@ -53,6 +54,7 @@ class Pegawai extends Model
         'tanggal_lahir' => 'date',
         'tanggal_masuk' => 'date',
         'tanggal_keluar' => 'date',
+        'gaji_pokok_tambahan' => 'decimal:2',
     ];
 
     /**
@@ -110,5 +112,27 @@ class Pegawai extends Model
     {
         $endDate = $this->tanggal_keluar ?? now();
         return $this->tanggal_masuk->diffInDays($endDate);
+    }
+
+    /**
+     * Get effective basic salary (prioritize gaji_pokok_tambahan over posisi gaji_pokok).
+     */
+    public function getGajiPokokEfektif()
+    {
+        // Jika gaji_pokok_tambahan ada nilainya (bukan 0 dan bukan null)
+        if ($this->gaji_pokok_tambahan && $this->gaji_pokok_tambahan > 0) {
+            return $this->gaji_pokok_tambahan;
+        }
+        
+        // Fallback ke gaji pokok dari posisi
+        return $this->posisi ? $this->posisi->gaji_pokok : 0;
+    }
+
+    /**
+     * Check if has custom basic salary.
+     */
+    public function hasCustomBasicSalary()
+    {
+        return $this->gaji_pokok_tambahan && $this->gaji_pokok_tambahan > 0;
     }
 }

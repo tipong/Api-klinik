@@ -31,6 +31,7 @@ class Posisi extends Model
     protected $fillable = [
         'nama_posisi',
         'gaji_pokok',
+        'gaji_absensi',
         'persen_bonus',
     ];
 
@@ -41,6 +42,7 @@ class Posisi extends Model
      */
     protected $casts = [
         'gaji_pokok' => 'decimal:2',
+        'gaji_absensi' => 'decimal:2',
         'persen_bonus' => 'decimal:2',
     ];
 
