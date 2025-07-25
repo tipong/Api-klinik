@@ -22,14 +22,23 @@ class LamaranPekerjaanController extends Controller
         $user = $request->user();
         $query = LamaranPekerjaan::with(['lowonganPekerjaan.posisi', 'user']);
         
-        // Filter by user for non-admin roles
-        if (!$user->isAdmin() && !$user->isHrd()) {
-            $query->where('id_user', $user->id_user);
-        } else {
-            // For admin/HRD, allow filtering by specific user ID if provided
-            if ($request->filled('id_user')) {
-                $query->where('id_user', $request->id_user);
+        // If user is authenticated, apply user-based filtering
+        if ($user) {
+            // Filter by user for non-admin roles
+            if (!$user->isAdmin() && !$user->isHrd()) {
+                $query->where('id_user', $user->id_user);
+            } else {
+                // For admin/HRD, allow filtering by specific user ID if provided
+                if ($request->filled('id_user')) {
+                    $query->where('id_user', $request->id_user);
+                }
             }
+        }
+        // If no user is authenticated (public access), return all data
+
+        // Allow filtering by id_user even if public
+        if ($request->filled('id_user')) {
+            $query->where('id_user', $request->id_user);
         }
         
         // Filter by lowongan
@@ -146,13 +155,16 @@ class LamaranPekerjaanController extends Controller
         
         $user = request()->user();
         
-        // Check if user is allowed to view this lamaran
-        if (!$user->isAdmin() && !$user->isHrd() && $user->id_user !== $lamaran->id_user) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Anda tidak memiliki akses untuk melihat lamaran ini'
-            ], 403);
+        // If user is authenticated, check if user is allowed to view this lamaran
+        if ($user) {
+            if (!$user->isAdmin() && !$user->isHrd() && $user->id_user !== $lamaran->id_user) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Anda tidak memiliki akses untuk melihat lamaran ini'
+                ], 403);
+            }
         }
+        // If no user is authenticated (public access), allow access to all data
         
         // Don't return the CV binary in the API response
         $lamaran = $lamaran->toArray();

@@ -43,6 +43,21 @@ Route::prefix('public')->group(function () {
     Route::delete('/users/{id}', [AuthController::class, 'publicDeleteUser']);
 });
 
+// Public API endpoints for frontend integration (without auth middleware)
+Route::prefix('public')->group(function () {
+    // Job application endpoints - publicly accessible for frontend dashboard
+    Route::get('/lamaran-pekerjaan', [LamaranPekerjaanController::class, 'index']);
+    Route::get('/lamaran-pekerjaan/{id}', [LamaranPekerjaanController::class, 'show']);
+    
+    // Interview and selection endpoints - publicly accessible for frontend dashboard
+    Route::get('/wawancara', [WawancaraController::class, 'index']);
+    Route::get('/wawancara/{id}', [WawancaraController::class, 'show']);
+    Route::get('/hasil-seleksi', [HasilSeleksiController::class, 'index']);
+    Route::get('/hasil-seleksi/{id}', [HasilSeleksiController::class, 'show']);
+    Route::get('/hasil-seleksi/user/{id_user}', [HasilSeleksiController::class, 'getByUser']);
+    Route::get('/lamaran/{id}/hasil', [HasilSeleksiController::class, 'getByLamaran']);
+});
+
 // Protected routes
 Route::middleware('auth:sanctum')->group(function () {
     // Auth routes
@@ -70,10 +85,6 @@ Route::middleware('auth:sanctum')->group(function () {
     // Self gaji data endpoint - accessible by all authenticated users
     Route::get('/gaji/my-data', [GajiController::class, 'getMyGaji']);
     Route::get('/gaji/{id}/detail', [GajiController::class, 'show']);
-
-    // Job application endpoints - accessible by all authenticated users (customers can see their own applications)
-    Route::get('/lamaran-pekerjaan', [LamaranPekerjaanController::class, 'index']);
-    Route::get('/lamaran-pekerjaan/{id}', [LamaranPekerjaanController::class, 'show']);
     
     // Apply for job - accessible by authenticated customers
     Route::post('/lowongan/apply', [LamaranPekerjaanController::class, 'store']);
@@ -111,11 +122,16 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::patch('/lamaran-pekerjaan/{id}', [LamaranPekerjaanController::class, 'update']);
         Route::delete('/lamaran-pekerjaan/{id}', [LamaranPekerjaanController::class, 'destroy']);
         
-        Route::apiResource('wawancara', WawancaraController::class);
-        Route::apiResource('hasil-seleksi', HasilSeleksiController::class);
-        Route::get('/hasil-seleksi/{id}', [HasilSeleksiController::class, 'show']);
-        Route::get('hasil-seleksi/user/{id_user}', [HasilSeleksiController::class, 'getByUser']);
-        Route::get('/lamaran/{id}/hasil', [HasilSeleksiController::class, 'getByLamaran']);
+        // Interview and selection management (CRUD operations only for admin/hrd)
+        Route::post('/wawancara', [WawancaraController::class, 'store']);
+        Route::put('/wawancara/{id}', [WawancaraController::class, 'update']);
+        Route::patch('/wawancara/{id}', [WawancaraController::class, 'update']);
+        Route::delete('/wawancara/{id}', [WawancaraController::class, 'destroy']);
+        
+        Route::post('/hasil-seleksi', [HasilSeleksiController::class, 'store']);
+        Route::put('/hasil-seleksi/{id}', [HasilSeleksiController::class, 'update']);
+        Route::patch('/hasil-seleksi/{id}', [HasilSeleksiController::class, 'update']);
+        Route::delete('/hasil-seleksi/{id}', [HasilSeleksiController::class, 'destroy']);
         
         // Gaji Management
         Route::apiResource('gaji', GajiController::class);

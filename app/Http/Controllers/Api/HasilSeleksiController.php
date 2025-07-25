@@ -26,10 +26,19 @@ class HasilSeleksiController extends Controller
             $query->where('id_hasil_seleksi', $request->id_hasil_seleksi);
         }
         
-        // Filter by user for non-admin roles
-        if (!$user->isAdmin() && !$user->isHrd()) {
-            $query->where('id_user', $user->id_user);
+        // If user is authenticated, apply user-based filtering
+        if ($user) {
+            // Filter by user for non-admin roles
+            if (!$user->isAdmin() && !$user->isHrd()) {
+                $query->where('id_user', $user->id_user);
+            }
+            
+            // Filter by user (admin/HRD can filter by specific user)
+            if (($user->isAdmin() || $user->isHrd()) && $request->filled('id_user')) {
+                $query->where('id_user', $request->id_user);
+            }
         }
+        // If no user is authenticated (public access), return all data
         
         // Filter by lamaran pekerjaan
         if ($request->filled('id_lamaran_pekerjaan')) {
@@ -39,11 +48,6 @@ class HasilSeleksiController extends Controller
         // Filter by status
         if ($request->filled('status')) {
             $query->where('status', $request->status);
-        }
-        
-        // Filter by user
-        if (($user->isAdmin() || $user->isHrd()) && $request->filled('id_user')) {
-            $query->where('id_user', $request->id_user);
         }
         
         $hasilSeleksi = $query->orderBy('created_at', 'desc')->paginate(15);
@@ -56,13 +60,17 @@ class HasilSeleksiController extends Controller
     {
         $currentUser = $request->user();
 
-        if (! $currentUser->isAdmin() 
-            && ! $currentUser->isHrd() 
-            && $currentUser->id_user != $id_user) {
-            return $this->errorResponse('Anda tidak memiliki akses untuk melihat data ini', 403);
+        // If user is authenticated, check access permissions
+        if ($currentUser) {
+            if (! $currentUser->isAdmin() 
+                && ! $currentUser->isHrd() 
+                && $currentUser->id_user != $id_user) {
+                return $this->errorResponse('Anda tidak memiliki akses untuk melihat data ini', 403);
+            }
         }
+        // If no user is authenticated (public access), allow access to all data
 
-        $query = HasilSeleksi::with(['user', 'lowonganPekerjaan.posisi'])
+        $query = HasilSeleksi::with(['user', 'lamaranPekerjaan.lowonganPekerjaan.posisi'])
             ->where('id_user', $id_user)
             ->orderBy('created_at', 'desc');
 
@@ -119,7 +127,7 @@ class HasilSeleksiController extends Controller
      */
     public function show(string $id)
     {
-        $hasilSeleksi = HasilSeleksi::with(['user', 'lowonganPekerjaan.posisi'])->find($id);
+        $hasilSeleksi = HasilSeleksi::with(['user', 'lamaranPekerjaan.lowonganPekerjaan.posisi'])->find($id);
         
         if (!$hasilSeleksi) {
             return response()->json([
@@ -130,13 +138,16 @@ class HasilSeleksiController extends Controller
         
         $user = request()->user();
         
-        // Check if user is allowed to view this result
-        if (!$user->isAdmin() && !$user->isHrd() && $user->id_user !== $hasilSeleksi->id_user) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Anda tidak memiliki akses untuk melihat hasil seleksi ini'
-            ], 403);
+        // If user is authenticated, check if user is allowed to view this result
+        if ($user) {
+            if (!$user->isAdmin() && !$user->isHrd() && $user->id_user !== $hasilSeleksi->id_user) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Anda tidak memiliki akses untuk melihat hasil seleksi ini'
+                ], 403);
+            }
         }
+        // If no user is authenticated (public access), allow access to all data
         
         return response()->json([
             'status' => 'success',
@@ -189,7 +200,7 @@ class HasilSeleksiController extends Controller
         return response()->json([
             'status' => 'success',
             'message' => 'Hasil seleksi berhasil diperbarui',
-            'data' => $hasilSeleksi->load(['user', 'lowonganPekerjaan.posisi'])
+            'data' => $hasilSeleksi->load(['user', 'lamaranPekerjaan.lowonganPekerjaan.posisi'])
         ]);
     }
 

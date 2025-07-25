@@ -23,10 +23,14 @@ class WawancaraController extends Controller
             $user = $request->user();
             $query = Wawancara::with(['lamaranPekerjaan.lowonganPekerjaan.posisi', 'user']);
             
-            // Filter by user for non-admin roles
-            if (!$user->isAdmin() && !$user->isHrd()) {
-                $query->where('id_user', $user->id_user);
+            // If user is authenticated, apply user-based filtering
+            if ($user) {
+                // Filter by user for non-admin roles
+                if (!$user->isAdmin() && !$user->isHrd()) {
+                    $query->where('id_user', $user->id_user);
+                }
             }
+            // If no user is authenticated (public access), return all data
             
             // Filter by lamaran
             if ($request->filled('id_lamaran_pekerjaan')) {
@@ -123,10 +127,13 @@ class WawancaraController extends Controller
             
             $user = $request->user();
             
-            // Check if user is allowed to view this wawancara
-            if (!$user->isAdmin() && !$user->isHrd() && $user->id_user !== $wawancara->id_user) {
-                return $this->forbiddenResponse('Anda tidak memiliki akses untuk melihat data wawancara ini');
+            // If user is authenticated, check if user is allowed to view this wawancara
+            if ($user) {
+                if (!$user->isAdmin() && !$user->isHrd() && $user->id_user !== $wawancara->id_user) {
+                    return $this->forbiddenResponse('Anda tidak memiliki akses untuk melihat data wawancara ini');
+                }
             }
+            // If no user is authenticated (public access), allow access to all data
             
             return $this->successResponse($wawancara, 'Data wawancara berhasil diambil');
             
