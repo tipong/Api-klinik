@@ -12,11 +12,15 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('tb_absensi', function (Blueprint $table) {
-            // Hapus kolom tanggal lama
-            $table->dropColumn('tanggal');
+            // Check if column exists before dropping (for MySQL safety)
+            if (Schema::hasColumn('tb_absensi', 'tanggal')) {
+                $table->dropColumn('tanggal');
+            }
             
-            // Tambah kolom tanggal_absensi baru
-            $table->date('tanggal_absensi')->after('id_pegawai')->default(now()->toDateString());
+            // Add new column if not exists
+            if (!Schema::hasColumn('tb_absensi', 'tanggal_absensi')) {
+                $table->date('tanggal_absensi')->after('id_pegawai')->default(now()->toDateString());
+            }
         });
     }
 

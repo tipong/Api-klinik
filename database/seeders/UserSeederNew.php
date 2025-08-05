@@ -29,7 +29,7 @@ class UserSeederNew extends Seeder
                 'email' => 'hrd@klinik.com',
                 'tanggal_lahir' => '1987-03-22',
                 'password' => Hash::make('hrd123'),
-                'role' => 'admin',
+                'role' => 'hrd',
                 'foto_profil' => 'hrd.jpg',
             ],
             [

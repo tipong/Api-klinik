@@ -26,11 +26,20 @@ class DatabaseSeeder extends Seeder
             TreatmentSeederNew::class,
             PromoSeederNew::class,
             
+            // Recruitment System (requires users and posisi)
+            LowonganPekerjaanSeederNew::class,
+            LamaranPekerjaanSeederNew::class,
+            WawancaraSeederNew::class,
+            HasilSeleksiSeederNew::class,
+            
             // Booking System (requires doctors and beauticians)
             BookingTreatmentSeederNew::class,
             
             // Attendance System (requires pegawai)
             AbsensiSeeder::class,
+            
+            // Payroll System (requires pegawai and absensi)
+            GajiSeederNew::class,
             
             // Training System
             PelatihanSeeder::class,

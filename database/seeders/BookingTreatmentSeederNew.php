@@ -6,15 +6,15 @@ use Illuminate\Database\Seeder;
 use App\Models\BookingTreatment;
 use Carbon\Carbon;
 
-class BookingTreatmentSeederNew extends Seeder
+class BookingTreatmentSeederNew extends BaseSeeder
 {
     /**
      * Run the database seeds.
      */
     public function run(): void
     {
-        // Clear existing data
-        BookingTreatment::truncate();
+        // Clear existing data safely
+        $this->safeTruncate(BookingTreatment::class);
         
         // Generate booking data for the last 3 months
         $this->generateBookingsForMonths();

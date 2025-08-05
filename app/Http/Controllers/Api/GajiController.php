@@ -144,7 +144,8 @@ class GajiController extends Controller
         $endDate = $startDate->copy()->endOfMonth();
         
         $jumlahAbsensi = Absensi::where('id_pegawai', $gaji->id_pegawai)
-                               ->whereBetween('tanggal', [$startDate->format('Y-m-d'), $endDate->format('Y-m-d')])
+                               ->whereBetween('tanggal_absensi', [$startDate->format('Y-m-d'), $endDate->format('Y-m-d')])
+                               ->where('status', 'Hadir')
                                ->count();
         
         $totalHariKerja = $startDate->diffInDaysFiltered(function(Carbon $date) {
@@ -200,16 +201,28 @@ class GajiController extends Controller
             $request->merge(['gaji_total' => $gajiTotal]);
         }
         
-        $gaji->update($request->only([
-            'status',
-        ]));
+        // Prepare update data
+        $updateData = $request->only(['status']);
+        
+        // Jika status berubah menjadi 'Terbayar', set tanggal pembayaran ke hari ini
+        if ($request->has('status') && $request->status === 'Terbayar') {
+            $updateData['tanggal_pembayaran'] = now();
+        }
+        
+        // Jika ada tanggal_pembayaran yang dikirim secara manual
+        if ($request->has('tanggal_pembayaran')) {
+            $updateData['tanggal_pembayaran'] = $request->tanggal_pembayaran;
+        }
+        
+        $gaji->update($updateData);
         
         // Tambahkan data absensi untuk record gaji yang sudah diupdate
         $startDate = Carbon::createFromDate($gaji->periode_tahun, $gaji->periode_bulan, 1);
         $endDate = $startDate->copy()->endOfMonth();
         
         $jumlahAbsensi = Absensi::where('id_pegawai', $gaji->id_pegawai)
-                               ->whereBetween('tanggal', [$startDate->format('Y-m-d'), $endDate->format('Y-m-d')])
+                               ->whereBetween('tanggal_absensi', [$startDate->format('Y-m-d'), $endDate->format('Y-m-d')])
+                               ->where('status', 'Hadir')
                                ->count();
         
         $totalHariKerja = $startDate->diffInDaysFiltered(function(Carbon $date) {
@@ -435,7 +448,8 @@ class GajiController extends Controller
             }, $endDate);
             
             $kehadiran = Absensi::where('id_pegawai', $p->id_pegawai)
-                               ->whereBetween('tanggal', [$startDate->format('Y-m-d'), $endDate->format('Y-m-d')])
+                               ->whereBetween('tanggal_absensi', [$startDate->format('Y-m-d'), $endDate->format('Y-m-d')])
+                               ->where('status', 'Hadir')
                                ->count();
             
             // Get posisi and calculate gaji
@@ -719,7 +733,8 @@ class GajiController extends Controller
                 $endDate = $startDate->copy()->endOfMonth();
                 
                 $jumlahAbsensi = Absensi::where('id_pegawai', $item->id_pegawai)
-                                       ->whereBetween('tanggal', [$startDate->format('Y-m-d'), $endDate->format('Y-m-d')])
+                                       ->whereBetween('tanggal_absensi', [$startDate->format('Y-m-d'), $endDate->format('Y-m-d')])
+                                       ->where('status', 'Hadir')
                                        ->count();
                 
                 // Hitung total hari kerja (weekdays) dalam bulan tersebut

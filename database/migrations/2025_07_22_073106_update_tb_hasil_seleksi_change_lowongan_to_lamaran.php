@@ -12,17 +12,22 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('tb_hasil_seleksi', function (Blueprint $table) {
-            // Hapus foreign key constraint lama
-            $table->dropForeign(['id_lowongan_pekerjaan']);
+            // Check if old column exists before dropping
+            if (Schema::hasColumn('tb_hasil_seleksi', 'id_lowongan_pekerjaan')) {
+                // Drop foreign key constraint first
+                try {
+                    $table->dropForeign(['id_lowongan_pekerjaan']);
+                } catch (\Exception $e) {
+                    // Continue if foreign key doesn't exist
+                }
+                $table->dropColumn('id_lowongan_pekerjaan');
+            }
             
-            // Hapus kolom id_lowongan_pekerjaan
-            $table->dropColumn('id_lowongan_pekerjaan');
-            
-            // Tambah kolom id_lamaran_pekerjaan
-            $table->unsignedInteger('id_lamaran_pekerjaan')->after('id_user');
-            
-            // Tambah foreign key constraint baru
-            $table->foreign('id_lamaran_pekerjaan')->references('id_lamaran_pekerjaan')->on('tb_lamaran_pekerjaan');
+            // Add new column if not exists
+            if (!Schema::hasColumn('tb_hasil_seleksi', 'id_lamaran_pekerjaan')) {
+                $table->unsignedInteger('id_lamaran_pekerjaan')->after('id_user');
+                $table->foreign('id_lamaran_pekerjaan')->references('id_lamaran_pekerjaan')->on('tb_lamaran_pekerjaan');
+            }
         });
     }
 

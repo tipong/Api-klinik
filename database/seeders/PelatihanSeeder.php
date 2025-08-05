@@ -19,7 +19,7 @@ class PelatihanSeeder extends Seeder
             [
                 'judul' => 'Pelatihan Laravel via Zoom',
                 'deskripsi' => 'Pelatihan membangun aplikasi web menggunakan Laravel melalui Zoom.',
-                'jenis_pelatihan' => 'Zoom Meeting',
+                'jenis_pelatihan' => 'zoom',
                 'jadwal_pelatihan' => Carbon::create(2025, 8, 10, 10, 0, 0),
                 'link_url' => 'https://zoom.us/j/1234567890',
                 'durasi' => 120,
@@ -29,7 +29,7 @@ class PelatihanSeeder extends Seeder
             [
                 'judul' => 'Pelatihan Soft Skill Offline',
                 'deskripsi' => 'Pelatihan keterampilan komunikasi dan kepemimpinan secara langsung.',
-                'jenis_pelatihan' => 'Offline',
+                'jenis_pelatihan' => 'offline',
                 'jadwal_pelatihan' => Carbon::create(2025, 8, 15, 9, 0, 0),
                 'link_url' => null,
                 'durasi' => 90,
@@ -39,7 +39,7 @@ class PelatihanSeeder extends Seeder
             [
                 'judul' => 'Panduan Penggunaan Sistem Klinik',
                 'deskripsi' => 'Dokumen PDF panduan penggunaan sistem informasi klinik.',
-                'jenis_pelatihan' => 'Dokumen',
+                'jenis_pelatihan' => 'document',
                 'jadwal_pelatihan' => null, // NULL bukan waktu
                 'link_url' => 'https://example.com/pelatihan/panduan.pdf',
                 'durasi' => 30,
@@ -49,7 +49,7 @@ class PelatihanSeeder extends Seeder
             [
                 'judul' => 'Video Pelatihan Keselamatan Kerja',
                 'deskripsi' => 'Video pelatihan keselamatan kerja yang dapat diakses kapan saja.',
-                'jenis_pelatihan' => 'Video Online',
+                'jenis_pelatihan' => 'video',
                 'jadwal_pelatihan' => null, // NULL juga valid
                 'link_url' => 'https://youtube.com/example-video',
                 'durasi' => 45,

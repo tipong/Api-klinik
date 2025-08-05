@@ -65,13 +65,13 @@ class GajiSeederNew extends Seeder
                         if ($isPresent) {
                             // Cek apakah absensi sudah ada
                             $existingAbsensi = Absensi::where('id_pegawai', $pegawai->id_pegawai)
-                                                    ->where('tanggal', $currentDate->format('Y-m-d'))
+                                                    ->where('tanggal_absensi', $currentDate->format('Y-m-d'))
                                                     ->first();
                             
                             if (!$existingAbsensi) {
                                 Absensi::create([
                                     'id_pegawai' => $pegawai->id_pegawai,
-                                    'tanggal' => $currentDate->format('Y-m-d'),
+                                    'tanggal_absensi' => $currentDate->format('Y-m-d'),
                                     'jam_masuk' => $currentDate->copy()->setTime(8, rand(0, 30))->format('H:i:s'),
                                     'jam_keluar' => $currentDate->copy()->setTime(17, rand(0, 30))->format('H:i:s'),
                                     'status' => 'Hadir',
