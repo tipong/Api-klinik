@@ -19,11 +19,14 @@ Route::prefix('auth')->group(function () {
     Route::post('/login', [AuthController::class, 'login']);
 });
 
-// Public Routes for Job Applications (view only)
-Route::prefix('lowongan')->group(function () {
-    Route::get('/', [LowonganPekerjaanController::class, 'index']);
-    Route::get('/{id}', [LowonganPekerjaanController::class, 'show']);
-});
+// CV access routes - direct access without prefix for easier integration
+Route::get('/lamaran/{id}/download-cv', [LamaranPekerjaanController::class, 'downloadCV']);
+Route::get('/lamaran/{id}/view-cv', [LamaranPekerjaanController::class, 'viewCV']);
+Route::get('/lamaran/{id}/cv-info', [LamaranPekerjaanController::class, 'getCVInfo']);
+
+// Lamaran endpoints - public access for better frontend integration
+Route::get('/lamaran', [LamaranPekerjaanController::class, 'index']);
+Route::get('/lamaran/{id}', [LamaranPekerjaanController::class, 'show']);
 
 // Public Master Gaji routes for frontend integration
 Route::prefix('master-gaji')->group(function () {
@@ -49,14 +52,47 @@ Route::prefix('public')->group(function () {
     Route::get('/lamaran-pekerjaan', [LamaranPekerjaanController::class, 'index']);
     Route::get('/lamaran-pekerjaan/{id}', [LamaranPekerjaanController::class, 'show']);
     
+    // CV access endpoints - publicly accessible for frontend dashboard
+    Route::get('/lamaran-pekerjaan/{id}/download-cv', [LamaranPekerjaanController::class, 'downloadCV']);
+    Route::get('/lamaran-pekerjaan/{id}/view-cv', [LamaranPekerjaanController::class, 'viewCV']);
+    Route::get('/lamaran-pekerjaan/{id}/cv-info', [LamaranPekerjaanController::class, 'getCVInfo']);
+    
     // Interview and selection endpoints - publicly accessible for frontend dashboard
     Route::get('/wawancara', [WawancaraController::class, 'index']);
     Route::get('/wawancara/{id}', [WawancaraController::class, 'show']);
+    Route::post('/wawancara', [WawancaraController::class, 'store']);
+    Route::put('/wawancara/{id}', [WawancaraController::class, 'update']);
+    Route::patch('/wawancara/{id}', [WawancaraController::class, 'update']);
+    Route::delete('/wawancara/{id}', [WawancaraController::class, 'destroy']);
+    
     Route::get('/hasil-seleksi', [HasilSeleksiController::class, 'index']);
     Route::get('/hasil-seleksi/{id}', [HasilSeleksiController::class, 'show']);
+    Route::post('/hasil-seleksi', [HasilSeleksiController::class, 'store']);
+    Route::put('/hasil-seleksi/{id}', [HasilSeleksiController::class, 'update']);
+    Route::patch('/hasil-seleksi/{id}', [HasilSeleksiController::class, 'update']);
+    Route::delete('/hasil-seleksi/{id}', [HasilSeleksiController::class, 'destroy']);
     Route::get('/hasil-seleksi/user/{id_user}', [HasilSeleksiController::class, 'getByUser']);
     Route::get('/lamaran/{id}/hasil', [HasilSeleksiController::class, 'getByLamaran']);
 });
+
+// Public access routes for lowongan (job vacancies) - for frontend compatibility
+Route::get('/lowongan', [LowonganPekerjaanController::class, 'index']); // Public access for all users
+Route::get('/lowongan/{id}', [LowonganPekerjaanController::class, 'show']); // Public access for all users
+
+// Public API routes for Wawancara and Hasil Seleksi - direct access without prefix
+Route::get('/wawancara', [WawancaraController::class, 'index']);
+Route::get('/wawancara/{id}', [WawancaraController::class, 'show']);
+Route::post('/wawancara', [WawancaraController::class, 'store']);
+Route::put('/wawancara/{id}', [WawancaraController::class, 'update']);
+Route::patch('/wawancara/{id}', [WawancaraController::class, 'update']);
+Route::delete('/wawancara/{id}', [WawancaraController::class, 'destroy']);
+
+Route::get('/hasil-seleksi', [HasilSeleksiController::class, 'index']);
+Route::get('/hasil-seleksi/{id}', [HasilSeleksiController::class, 'show']);
+Route::post('/hasil-seleksi', [HasilSeleksiController::class, 'store']);
+Route::put('/hasil-seleksi/{id}', [HasilSeleksiController::class, 'update']);
+Route::patch('/hasil-seleksi/{id}', [HasilSeleksiController::class, 'update']);
+Route::delete('/hasil-seleksi/{id}', [HasilSeleksiController::class, 'destroy']);
 
 // Protected routes
 Route::middleware('auth:sanctum')->group(function () {
@@ -121,6 +157,14 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('/lamaran-pekerjaan/{id}', [LamaranPekerjaanController::class, 'update']);
         Route::patch('/lamaran-pekerjaan/{id}', [LamaranPekerjaanController::class, 'update']);
         Route::delete('/lamaran-pekerjaan/{id}', [LamaranPekerjaanController::class, 'destroy']);
+        
+        // Schedule interview for accepted applications
+        Route::post('/lamaran-pekerjaan/{id}/schedule-interview', [LamaranPekerjaanController::class, 'scheduleInterview']);
+        
+        // CV access endpoints for admin/HRD with authentication
+        Route::get('/lamaran-pekerjaan/{id}/download-cv', [LamaranPekerjaanController::class, 'downloadCV']);
+        Route::get('/lamaran-pekerjaan/{id}/view-cv', [LamaranPekerjaanController::class, 'viewCV']);
+        Route::get('/lamaran-pekerjaan/{id}/cv-info', [LamaranPekerjaanController::class, 'getCVInfo']);
         
         // Interview and selection management (CRUD operations only for admin/hrd)
         Route::post('/wawancara', [WawancaraController::class, 'store']);

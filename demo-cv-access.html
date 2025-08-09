@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Demo Akses CV Lamaran Pekerjaan</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background-color: #f5f5f5; }
+        .container { max-width: 1000px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2 { color: #333; }
+        .lamaran-card { border: 1px solid #ddd; padding: 15px; margin: 10px 0; border-radius: 5px; background: #fafafa; }
+        .cv-info { background: #e8f4fd; padding: 10px; border-left: 4px solid #2196F3; margin: 10px 0; }
+        .cv-actions { margin: 10px 0; }
+        .btn { padding: 8px 16px; margin: 5px; border: none; border-radius: 4px; cursor: pointer; text-decoration: none; display: inline-block; }
+        .btn-download { background: #4CAF50; color: white; }
+        .btn-view { background: #2196F3; color: white; }
+        .btn-info { background: #FF9800; color: white; }
+        .btn:hover { opacity: 0.8; }
+        .no-cv { color: #777; font-style: italic; }
+        #loading { display: none; text-align: center; padding: 20px; }
+        .status-badge { padding: 3px 8px; border-radius: 12px; font-size: 12px; font-weight: bold; }
+        .status-pending { background: #FFF3CD; color: #856404; }
+        .status-diterima { background: #D4EDDA; color: #155724; }
+        .status-ditolak { background: #F8D7DA; color: #721C24; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🏥 Demo Akses CV Lamaran Pekerjaan Klinik</h1>
+        <p>Demo ini menunjukkan bagaimana mengakses CV pelamar melalui API klinik.</p>
+        
+        <div id="loading">
+            <p>⏳ Memuat data lamaran...</p>
+        </div>
+        
+        <div id="lamaran-list"></div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://127.0.0.1:8001/api';
+
+        // Function to get status badge HTML
+        function getStatusBadge(status) {
+            return `<span class="status-badge status-${status}">${status.toUpperCase()}</span>`;
+        }
+
+        // Function to load and display job applications
+        async function loadLamaran() {
+            const loading = document.getElementById('loading');
+            const lamaranList = document.getElementById('lamaran-list');
+            
+            loading.style.display = 'block';
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/lamaran`);
+                const data = await response.json();
+                
+                loading.style.display = 'none';
+                
+                if (data.status === 'success') {
+                    displayLamaran(data.data.data);
+                } else {
+                    lamaranList.innerHTML = '<p>❌ Gagal memuat data lamaran</p>';
+                }
+            } catch (error) {
+                loading.style.display = 'none';
+                lamaranList.innerHTML = '<p>❌ Error: ' + error.message + '</p>';
+            }
+        }
+
+        // Function to display job applications
+        function displayLamaran(lamaran) {
+            const lamaranList = document.getElementById('lamaran-list');
+            
+            if (lamaran.length === 0) {
+                lamaranList.innerHTML = '<p>📋 Belum ada lamaran pekerjaan</p>';
+                return;
+            }
+            
+            const html = lamaran.map(item => `
+                <div class="lamaran-card">
+                    <h3>👤 ${item.nama_pelamar}</h3>
+                    <p><strong>Posisi:</strong> ${item.lowongan_pekerjaan.judul_pekerjaan}</p>
+                    <p><strong>Email:</strong> ${item.email_pelamar}</p>
+                    <p><strong>Telepon:</strong> ${item.telepon_pelamar}</p>
+                    <p><strong>Pendidikan:</strong> ${item.pendidikan_terakhir}</p>
+                    <p><strong>Status:</strong> ${getStatusBadge(item.status)}</p>
+                    <p><strong>Tanggal Lamaran:</strong> ${new Date(item.created_at).toLocaleDateString('id-ID')}</p>
+                    
+                    <div class="cv-info">
+                        <h4>📄 Informasi CV</h4>
+                        ${item.cv_info.has_cv ? `
+                            <p>✅ <strong>CV Tersedia:</strong> ${item.cv_info.cv_size_formatted} (${item.cv_info.file_type})</p>
+                            <div class="cv-actions">
+                                <a href="${item.cv_info.download_url}" class="btn btn-download" target="_blank">
+                                    ⬇️ Download CV
+                                </a>
+                                <a href="${item.cv_info.view_url}" class="btn btn-view" target="_blank">
+                                    👁️ Lihat CV
+                                </a>
+                                <button onclick="getCVInfo(${item.id_lamaran_pekerjaan})" class="btn btn-info">
+                                    ℹ️ Info CV
+                                </button>
+                            </div>
+                        ` : `
+                            <p class="no-cv">❌ CV tidak tersedia</p>
+                        `}
+                    </div>
+                </div>
+            `).join('');
+            
+            lamaranList.innerHTML = html;
+        }
+
+        // Function to get detailed CV info
+        async function getCVInfo(lamaranId) {
+            try {
+                const response = await fetch(`${API_BASE_URL}/lamaran/${lamaranId}/cv-info`);
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    const cvInfo = data.data;
+                    alert(`
+📄 Informasi Detail CV
+
+👤 Nama: ${cvInfo.nama_pelamar}
+📁 Ukuran: ${cvInfo.cv_size_formatted}
+📋 Tipe: ${cvInfo.file_type || 'N/A'}
+📅 Upload: ${new Date(cvInfo.uploaded_at).toLocaleString('id-ID')}
+
+🔗 URL Download: ${cvInfo.download_url || 'N/A'}
+🔗 URL View: ${cvInfo.view_url || 'N/A'}
+                    `);
+                } else {
+                    alert('❌ Gagal mengambil informasi CV');
+                }
+            } catch (error) {
+                alert('❌ Error: ' + error.message);
+            }
+        }
+
+        // Load data when page loads
+        document.addEventListener('DOMContentLoaded', loadLamaran);
+    </script>
+</body>
+</html>

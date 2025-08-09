@@ -58,6 +58,26 @@ class LamaranPekerjaanController extends Controller
         
         $lamaran = $query->orderBy('created_at', 'desc')->paginate(15);
         
+        // Add CV info to each lamaran without exposing binary data
+        $lamaran->getCollection()->transform(function ($item) {
+            $itemArray = $item->toArray();
+            unset($itemArray['CV']);
+            
+            $fileInfo = $item->CV ? $this->detectFileType($item->CV) : null;
+            
+            $itemArray['cv_info'] = [
+                'has_cv' => !empty($item->CV),
+                'cv_size' => $item->CV ? strlen($item->CV) : 0,
+                'cv_size_formatted' => $item->CV ? $this->formatBytes(strlen($item->CV)) : '0 bytes',
+                'file_type' => $fileInfo ? $fileInfo['type'] : null,
+                'file_extension' => $fileInfo ? $fileInfo['extension'] : null,
+                'download_url' => !empty($item->CV) ? url("/api/lamaran/{$item->id_lamaran_pekerjaan}/download-cv") : null,
+                'view_url' => !empty($item->CV) ? url("/api/lamaran/{$item->id_lamaran_pekerjaan}/view-cv") : null,
+            ];
+            
+            return $itemArray;
+        });
+        
         return response()->json([
             'status' => 'success',
             'data' => $lamaran
@@ -166,13 +186,26 @@ class LamaranPekerjaanController extends Controller
         }
         // If no user is authenticated (public access), allow access to all data
         
-        // Don't return the CV binary in the API response
-        $lamaran = $lamaran->toArray();
-        unset($lamaran['CV']);
+        // Convert to array and don't return the CV binary in the API response
+        $lamaranData = $lamaran->toArray();
+        unset($lamaranData['CV']);
+        
+        // Add CV information without the binary data
+        $fileInfo = $lamaran->CV ? $this->detectFileType($lamaran->CV) : null;
+        
+        $lamaranData['cv_info'] = [
+            'has_cv' => !empty($lamaran->CV),
+            'cv_size' => $lamaran->CV ? strlen($lamaran->CV) : 0,
+            'cv_size_formatted' => $lamaran->CV ? $this->formatBytes(strlen($lamaran->CV)) : '0 bytes',
+            'file_type' => $fileInfo ? $fileInfo['type'] : null,
+            'file_extension' => $fileInfo ? $fileInfo['extension'] : null,
+            'download_url' => !empty($lamaran->CV) ? url("/api/lamaran/{$id}/download-cv") : null,
+            'view_url' => !empty($lamaran->CV) ? url("/api/lamaran/{$id}/view-cv") : null,
+        ];
         
         return response()->json([
             'status' => 'success',
-            'data' => $lamaran
+            'data' => $lamaranData
         ]);
     }
 
@@ -240,7 +273,8 @@ class LamaranPekerjaanController extends Controller
         $user = request()->user();
         
         // Check if user is allowed to download this CV
-        if (!$user->isAdmin() && !$user->isHrd() && $user->id_user !== $lamaran->id_user) {
+        // Allow public access, but if user is authenticated, apply role-based access control
+        if ($user && !$user->isAdmin() && !$user->isHrd() && $user->id_user !== $lamaran->id_user) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Anda tidak memiliki akses untuk mengunduh CV ini'
@@ -254,10 +288,211 @@ class LamaranPekerjaanController extends Controller
             ], 404);
         }
         
-        $filename = 'CV_' . str_replace(' ', '_', $lamaran->nama_pelamar) . '.pdf';
+        $fileInfo = $this->detectFileType($lamaran->CV);
+        $filename = 'CV_' . str_replace(' ', '_', $lamaran->nama_pelamar) . '.' . $fileInfo['extension'];
         
         return response($lamaran->CV)
-            ->header('Content-Type', 'application/pdf')
+            ->header('Content-Type', $fileInfo['type'])
             ->header('Content-Disposition', 'attachment; filename="' . $filename . '"');
+    }
+
+    /**
+     * View CV from application (inline preview)
+     */
+    public function viewCV(string $id)
+    {
+        $lamaran = LamaranPekerjaan::find($id);
+        
+        if (!$lamaran) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Lamaran pekerjaan tidak ditemukan'
+            ], 404);
+        }
+        
+        $user = request()->user();
+        
+        // Check if user is allowed to view this CV
+        // Allow public access, but if user is authenticated, apply role-based access control
+        if ($user && !$user->isAdmin() && !$user->isHrd() && $user->id_user !== $lamaran->id_user) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Anda tidak memiliki akses untuk melihat CV ini'
+            ], 403);
+        }
+        
+        if (!$lamaran->CV) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'CV tidak ditemukan'
+            ], 404);
+        }
+        
+        $fileInfo = $this->detectFileType($lamaran->CV);
+        $filename = 'CV_' . str_replace(' ', '_', $lamaran->nama_pelamar) . '.' . $fileInfo['extension'];
+        
+        return response($lamaran->CV)
+            ->header('Content-Type', $fileInfo['type'])
+            ->header('Content-Disposition', 'inline; filename="' . $filename . '"')
+            ->header('Cache-Control', 'public, max-age=3600');
+    }
+
+    /**
+     * Get CV info without downloading
+     */
+    public function getCVInfo(string $id)
+    {
+        $lamaran = LamaranPekerjaan::find($id);
+        
+        if (!$lamaran) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Lamaran pekerjaan tidak ditemukan'
+            ], 404);
+        }
+        
+        $user = request()->user();
+        
+        // Check if user is allowed to access CV info
+        // Allow public access, but if user is authenticated, apply role-based access control
+        if ($user && !$user->isAdmin() && !$user->isHrd() && $user->id_user !== $lamaran->id_user) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Anda tidak memiliki akses untuk melihat informasi CV ini'
+            ], 403);
+        }
+        
+        $fileInfo = $lamaran->CV ? $this->detectFileType($lamaran->CV) : null;
+        
+        $cvInfo = [
+            'has_cv' => !empty($lamaran->CV),
+            'cv_size' => $lamaran->CV ? strlen($lamaran->CV) : 0,
+            'cv_size_formatted' => $lamaran->CV ? $this->formatBytes(strlen($lamaran->CV)) : '0 bytes',
+            'file_type' => $fileInfo ? $fileInfo['type'] : null,
+            'file_extension' => $fileInfo ? $fileInfo['extension'] : null,
+            'nama_pelamar' => $lamaran->nama_pelamar,
+            'download_url' => !empty($lamaran->CV) ? url("/api/lamaran/{$id}/download-cv") : null,
+            'view_url' => !empty($lamaran->CV) ? url("/api/lamaran/{$id}/view-cv") : null,
+            'uploaded_at' => $lamaran->created_at
+        ];
+        
+        return response()->json([
+            'status' => 'success',
+            'data' => $cvInfo
+        ]);
+    }
+
+    /**
+     * Detect file type from binary content
+     */
+    private function detectFileType($binaryContent)
+    {
+        // PDF signature
+        if (substr($binaryContent, 0, 4) === '%PDF') {
+            return ['type' => 'application/pdf', 'extension' => 'pdf'];
+        }
+        
+        // DOC signature (MS Office)
+        if (substr($binaryContent, 0, 8) === "\xD0\xCF\x11\xE0\xA1\xB1\x1A\xE1") {
+            return ['type' => 'application/msword', 'extension' => 'doc'];
+        }
+        
+        // DOCX signature (ZIP file starting with PK)
+        if (substr($binaryContent, 0, 2) === 'PK') {
+            // Further check for DOCX by looking for word/ directory
+            if (strpos($binaryContent, 'word/') !== false) {
+                return ['type' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'extension' => 'docx'];
+            }
+        }
+        
+        // Default to PDF if detection fails
+        return ['type' => 'application/pdf', 'extension' => 'pdf'];
+    }
+
+    /**
+     * Format bytes to human readable format
+     */
+    private function formatBytes($bytes, $precision = 2)
+    {
+        $units = array('B', 'KB', 'MB', 'GB', 'TB');
+        
+        for ($i = 0; $bytes > 1024; $i++) {
+            $bytes /= 1024;
+        }
+        
+        return round($bytes, $precision) . ' ' . $units[$i];
+    }
+
+    /**
+     * Schedule interview for accepted application
+     */
+    public function scheduleInterview(Request $request, string $id)
+    {
+        $lamaran = LamaranPekerjaan::find($id);
+        
+        if (!$lamaran) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Lamaran pekerjaan tidak ditemukan'
+            ], 404);
+        }
+        
+        $user = $request->user();
+        
+        // Only admin or HRD can schedule interview
+        if (!$user->isAdmin() && !$user->isHrd()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Anda tidak memiliki akses untuk menjadwalkan wawancara'
+            ], 403);
+        }
+        
+        // Check if application status is diterima (accepted)
+        if ($lamaran->status !== 'diterima') {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Hanya lamaran yang diterima yang bisa dijadwalkan wawancara'
+            ], 400);
+        }
+        
+        $validator = Validator::make($request->all(), [
+            'tanggal_wawancara' => 'required|date|after:today',
+            'lokasi_wawancara' => 'required|string|max:255',
+            'catatan' => 'nullable|string|max:1000'
+        ]);
+        
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Validation error',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+        
+        // Check if interview already exists for this application
+        $existingInterview = \App\Models\Wawancara::where('id_lamaran_pekerjaan', $id)->first();
+        
+        if ($existingInterview) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Wawancara sudah dijadwalkan untuk lamaran ini'
+            ], 400);
+        }
+        
+        // Create new interview record
+        $wawancara = \App\Models\Wawancara::create([
+            'id_lamaran_pekerjaan' => $id,
+            'id_user' => $lamaran->id_user,
+            'tanggal_wawancara' => $request->tanggal_wawancara,
+            'lokasi_wawancara' => $request->lokasi_wawancara,
+            'status_wawancara' => 'dijadwalkan',
+            'catatan' => $request->catatan,
+        ]);
+        
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Wawancara berhasil dijadwalkan',
+            'data' => $wawancara->load(['lamaranPekerjaan.lowonganPekerjaan.posisi', 'user'])
+        ], 201);
     }
 }

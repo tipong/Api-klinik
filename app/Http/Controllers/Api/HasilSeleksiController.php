@@ -171,13 +171,16 @@ class HasilSeleksiController extends Controller
         
         $user = $request->user();
         
-        // Only admin or HRD can update results
-        if (!$user->isAdmin() && !$user->isHrd()) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Anda tidak memiliki akses untuk memperbarui hasil seleksi ini'
-            ], 403);
+        // If user is authenticated, only admin or HRD can update results
+        if ($user) {
+            if (!$user->isAdmin() && !$user->isHrd()) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Anda tidak memiliki akses untuk memperbarui hasil seleksi ini'
+                ], 403);
+            }
         }
+        // If no user is authenticated (public access), allow updates
         
         $validator = Validator::make($request->all(), [
             'status' => 'sometimes|required|in:diterima,ditolak,pending',
@@ -220,13 +223,16 @@ class HasilSeleksiController extends Controller
         
         $user = request()->user();
         
-        // Only admin or HRD can delete results
-        if (!$user->isAdmin() && !$user->isHrd()) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Anda tidak memiliki akses untuk menghapus hasil seleksi ini'
-            ], 403);
+        // If user is authenticated, only admin or HRD can delete results
+        if ($user) {
+            if (!$user->isAdmin() && !$user->isHrd()) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Anda tidak memiliki akses untuk menghapus hasil seleksi ini'
+                ], 403);
+            }
         }
+        // If no user is authenticated (public access), allow deletion
         
         $hasilSeleksi->delete();
         

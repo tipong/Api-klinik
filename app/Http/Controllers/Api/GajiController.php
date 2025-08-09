@@ -168,7 +168,9 @@ class GajiController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        $gaji = Gaji::find($id);
+        $user = $request->user();
+        
+        $gaji = Gaji::with(['pegawai.user'])->find($id);
         
         if (!$gaji) {
             return response()->json([
@@ -177,8 +179,26 @@ class GajiController extends Controller
             ], 404);
         }
         
+        // Check permission - admin/hrd can edit all, pegawai can only edit their own
+        if (!$user->hasAdminPrivileges()) {
+            // Check if this gaji belongs to the current user
+            if (!$gaji->pegawai || $gaji->pegawai->id_user != $user->id_user) {
+                return response()->json([
+                    'status' => 'gagal',
+                    'pesan' => 'Anda tidak memiliki izin untuk mengubah data gaji ini'
+                ], 403);
+            }
+        }
+        
         $validator = Validator::make($request->all(), [
+            'id_pegawai' => 'sometimes|required|integer|exists:tb_pegawai,id_pegawai',
+            'periode_bulan' => 'sometimes|required|integer|min:1|max:12',
+            'periode_tahun' => 'sometimes|required|integer|min:2020',
             'gaji_pokok' => 'sometimes|required|numeric|min:0',
+            'gaji_bonus' => 'sometimes|nullable|numeric|min:0',
+            'gaji_kehadiran' => 'sometimes|nullable|numeric|min:0',
+            'gaji_total' => 'sometimes|nullable|numeric|min:0',
+            'keterangan' => 'sometimes|nullable|string|max:1000',
             'tanggal_pembayaran' => 'nullable|date',
             'status' => 'sometimes|required|in:Terbayar,Belum Terbayar',
         ]);
@@ -194,15 +214,30 @@ class GajiController extends Controller
         // Calculate total if needed
         if ($request->has('gaji_pokok') || $request->has('gaji_bonus') || $request->has('gaji_kehadiran')) {
             $gajiPokok = $request->has('gaji_pokok') ? $request->gaji_pokok : $gaji->gaji_pokok;
-            $gajiBonus = $request->has('gaji_bonus') ? $request->gaji_bonus : $gaji->gaji_bonus;
-            $gajiKehadiran = $request->has('gaji_kehadiran') ? $request->gaji_kehadiran : $gaji->gaji_kehadiran;
+            $gajiBonus = $request->has('gaji_bonus') ? $request->gaji_bonus : ($gaji->gaji_bonus ?? 0);
+            $gajiKehadiran = $request->has('gaji_kehadiran') ? $request->gaji_kehadiran : ($gaji->gaji_kehadiran ?? 0);
             $gajiTotal = $gajiPokok + $gajiBonus + $gajiKehadiran;
             
             $request->merge(['gaji_total' => $gajiTotal]);
         }
         
-        // Prepare update data
-        $updateData = $request->only(['status']);
+        // Prepare update data - now allow more fields to be updated
+        $updateData = $request->only([
+            'id_pegawai', 
+            'periode_bulan', 
+            'periode_tahun', 
+            'gaji_pokok', 
+            'gaji_bonus', 
+            'gaji_kehadiran', 
+            'gaji_total',
+            'keterangan',
+            'status'
+        ]);
+        
+        // Remove null values to avoid overriding existing data
+        $updateData = array_filter($updateData, function($value) {
+            return $value !== null && $value !== '';
+        });
         
         // Jika status berubah menjadi 'Terbayar', set tanggal pembayaran ke hari ini
         if ($request->has('status') && $request->status === 'Terbayar') {
