@@ -11,10 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('tb_wawancara', function (Blueprint $table) {
-            // Rename kolom hasil menjadi status
-            $table->renameColumn('hasil', 'status');
-        });
+        // Sudah dilakukan di migrasi awal untuk SQLite
+        // Schema::table('tb_wawancara', function (Blueprint $table) {
+        //     // Rename kolom hasil menjadi status
+        //     $table->renameColumn('hasil', 'status');
+        // });
     }
 
     /**
@@ -22,9 +23,9 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('tb_wawancara', function (Blueprint $table) {
-            // Rename kembali kolom status menjadi hasil
-            $table->renameColumn('status', 'hasil');
-        });
+        // Schema::table('tb_wawancara', function (Blueprint $table) {
+        //     // Rename kembali kolom status menjadi hasil
+        //     $table->renameColumn('status', 'hasil');
+        // });
     }
 };

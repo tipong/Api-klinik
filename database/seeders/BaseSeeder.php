@@ -12,14 +12,30 @@ abstract class BaseSeeder extends Seeder
      */
     protected function safeTruncate($modelClass)
     {
-        // Disable foreign key checks for MySQL
-        DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+        $driver = DB::getDriverName();
         
-        // Truncate the table
-        $modelClass::truncate();
-        
-        // Re-enable foreign key checks
-        DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+        if ($driver === 'mysql') {
+            // Disable foreign key checks for MySQL
+            DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+            
+            // Truncate the table
+            $modelClass::truncate();
+            
+            // Re-enable foreign key checks
+            DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+        } elseif ($driver === 'sqlite') {
+            // For SQLite, disable foreign key constraints
+            DB::statement('PRAGMA foreign_keys=OFF;');
+            
+            // Truncate the table
+            $modelClass::truncate();
+            
+            // Re-enable foreign key constraints
+            DB::statement('PRAGMA foreign_keys=ON;');
+        } else {
+            // For other databases, just truncate
+            $modelClass::truncate();
+        }
     }
     
     /**
@@ -27,12 +43,22 @@ abstract class BaseSeeder extends Seeder
      */
     protected function withoutForeignKeyChecks(callable $callback)
     {
-        DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+        $driver = DB::getDriverName();
         
-        try {
+        if ($driver === 'mysql') {
+            DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+            
             $callback();
-        } finally {
+            
             DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+        } elseif ($driver === 'sqlite') {
+            DB::statement('PRAGMA foreign_keys=OFF;');
+            
+            $callback();
+            
+            DB::statement('PRAGMA foreign_keys=ON;');
+        } else {
+            $callback();
         }
     }
 }

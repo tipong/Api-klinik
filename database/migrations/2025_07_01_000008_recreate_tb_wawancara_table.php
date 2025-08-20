@@ -21,7 +21,7 @@ return new class extends Migration
             $table->dateTime('tanggal_wawancara');
             $table->string('lokasi', 255);
             $table->text('catatan')->nullable();
-            $table->enum('hasil', ['diterima', 'ditolak', 'pending'])->default('pending');
+            $table->string('status', 20)->default('pending');
             $table->timestamp('created_at')->useCurrent();
             $table->timestamp('updated_at')->default('1970-01-01 00:00:01');
             

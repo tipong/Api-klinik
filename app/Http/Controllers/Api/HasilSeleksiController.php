@@ -45,6 +45,13 @@ class HasilSeleksiController extends Controller
             $query->where('id_lamaran_pekerjaan', $request->id_lamaran_pekerjaan);
         }
         
+        // Filter by lowongan pekerjaan (through lamaran_pekerjaan relationship)
+        if ($request->filled('id_lowongan_pekerjaan')) {
+            $query->whereHas('lamaranPekerjaan', function ($q) use ($request) {
+                $q->where('id_lowongan_pekerjaan', $request->id_lowongan_pekerjaan);
+            });
+        }
+        
         // Filter by status
         if ($request->filled('status')) {
             $query->where('status', $request->status);
@@ -89,6 +96,11 @@ class HasilSeleksiController extends Controller
     public function store(Request $request)
     {
         try {
+            \Log::info('HasilSeleksi store request received', [
+                'request_data' => $request->all(),
+                'headers' => $request->headers->all()
+            ]);
+            
             $validator = Validator::make($request->all(), [
                 'id_user' => 'required|exists:tb_user,id_user',
                 'id_lamaran_pekerjaan' => 'required|exists:tb_lamaran_pekerjaan,id_lamaran_pekerjaan',
@@ -97,6 +109,9 @@ class HasilSeleksiController extends Controller
             ]);
             
             if ($validator->fails()) {
+                \Log::warning('HasilSeleksi store validation failed', [
+                    'errors' => $validator->errors()->toArray()
+                ]);
                 return $this->validationErrorResponse($validator->errors());
             }
             
@@ -106,10 +121,36 @@ class HasilSeleksiController extends Controller
                                       ->first();
                                       
             if ($existingHasil) {
-                return $this->errorResponse('Hasil seleksi untuk user dan lamaran ini sudah ada', 400);
+                \Log::warning('HasilSeleksi already exists, attempting to update', [
+                    'existing_id' => $existingHasil->id_hasil_seleksi,
+                    'existing_status' => $existingHasil->status,
+                    'new_status' => $request->status
+                ]);
+                
+                // Update existing record instead of throwing error
+                $existingHasil->update([
+                    'status' => $request->status,
+                    'catatan' => $request->catatan,
+                ]);
+                
+                \Log::info('HasilSeleksi updated successfully', [
+                    'id' => $existingHasil->id_hasil_seleksi,
+                    'new_status' => $existingHasil->status
+                ]);
+                
+                return $this->successResponse(
+                    $existingHasil->load(['user', 'lamaranPekerjaan.lowonganPekerjaan.posisi']),
+                    'Hasil seleksi berhasil diperbarui',
+                    200
+                );
             }
             
             $hasilSeleksi = HasilSeleksi::create($request->all());
+            
+            \Log::info('HasilSeleksi created successfully', [
+                'id' => $hasilSeleksi->id_hasil_seleksi,
+                'status' => $hasilSeleksi->status
+            ]);
             
             return $this->successResponse(
                 $hasilSeleksi->load(['user', 'lamaranPekerjaan.lowonganPekerjaan.posisi']),
@@ -118,6 +159,10 @@ class HasilSeleksiController extends Controller
             );
             
         } catch (\Exception $e) {
+            \Log::error('HasilSeleksi store failed', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
             return $this->serverErrorResponse('Gagal menambahkan hasil seleksi: ' . $e->getMessage());
         }
     }
@@ -160,14 +205,27 @@ class HasilSeleksiController extends Controller
      */
     public function update(Request $request, string $id)
     {
+        \Log::info('HasilSeleksi update request received', [
+            'id' => $id,
+            'request_data' => $request->all()
+        ]);
+        
         $hasilSeleksi = HasilSeleksi::find($id);
         
         if (!$hasilSeleksi) {
+            \Log::warning('HasilSeleksi not found for update', ['id' => $id]);
             return response()->json([
                 'status' => 'error',
                 'message' => 'Hasil seleksi tidak ditemukan'
             ], 404);
         }
+        
+        \Log::info('Found existing HasilSeleksi', [
+            'id' => $hasilSeleksi->id_hasil_seleksi,
+            'current_status' => $hasilSeleksi->status,
+            'user_id' => $hasilSeleksi->id_user,
+            'lamaran_id' => $hasilSeleksi->id_lamaran_pekerjaan
+        ]);
         
         $user = $request->user();
         
@@ -188,6 +246,9 @@ class HasilSeleksiController extends Controller
         ]);
         
         if ($validator->fails()) {
+            \Log::warning('HasilSeleksi update validation failed', [
+                'errors' => $validator->errors()->toArray()
+            ]);
             return response()->json([
                 'status' => 'error',
                 'message' => 'Validation error',
@@ -195,10 +256,21 @@ class HasilSeleksiController extends Controller
             ], 422);
         }
         
-        $hasilSeleksi->update($request->only([
-            'status',
-            'catatan',
-        ]));
+        $updateData = $request->only(['status', 'catatan']);
+        
+        \Log::info('Updating HasilSeleksi', [
+            'id' => $id,
+            'update_data' => $updateData,
+            'old_status' => $hasilSeleksi->status
+        ]);
+        
+        $hasilSeleksi->update($updateData);
+        
+        \Log::info('HasilSeleksi updated successfully', [
+            'id' => $hasilSeleksi->id_hasil_seleksi,
+            'new_status' => $hasilSeleksi->status,
+            'old_status' => $hasilSeleksi->getOriginal('status')
+        ]);
         
         return response()->json([
             'status' => 'success',

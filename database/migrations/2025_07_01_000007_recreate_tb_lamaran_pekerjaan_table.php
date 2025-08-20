@@ -25,7 +25,7 @@ return new class extends Migration
             $table->text('alamat_pelamar');
             $table->string('pendidikan_terakhir', 50);
             $table->binary('CV')->nullable();
-            $table->enum('status_lamaran', ['pending', 'diterima', 'ditolak'])->default('pending');
+            $table->string('status_lamaran', 20)->default('pending');
             $table->string('status_seleksi', 50)->nullable();
             $table->timestamps();
             

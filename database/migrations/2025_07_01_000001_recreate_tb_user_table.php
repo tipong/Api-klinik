@@ -22,7 +22,8 @@ return new class extends Migration
             $table->date('tanggal_lahir')->nullable();
             $table->string('password', 255);
             $table->string('foto_profil', 255)->nullable();
-            $table->enum('role', ['pelanggan', 'dokter', 'beautician', 'front office', 'kasir', 'admin'])->default('pelanggan');
+            // SQLite doesn't need ENUM, just use string
+            $table->string('role', 50)->default('pelanggan');
             $table->rememberToken();
             $table->timestamps();
         });

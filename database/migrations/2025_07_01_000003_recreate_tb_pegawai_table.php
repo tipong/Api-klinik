@@ -19,7 +19,7 @@ return new class extends Migration
             $table->unsignedInteger('id_user')->nullable();
             $table->string('nama_lengkap', 100);
             $table->date('tanggal_lahir')->nullable();
-            $table->string('jenis_kelamin', 10)->nullable();
+            $table->string('jenis_kelamin', 20)->nullable();
             $table->text('alamat')->nullable();
             $table->string('telepon', 20)->nullable();
             $table->string('email', 100)->nullable();

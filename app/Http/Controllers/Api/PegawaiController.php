@@ -65,9 +65,10 @@ class PegawaiController extends Controller
             'id_posisi' => 'required|exists:tb_posisi,id_posisi',
             'agama' => 'nullable|string|max:20',
             'tanggal_masuk' => 'required|date',
+            'id_user' => 'nullable|exists:tb_user,id_user', // Allow linking to existing user
             'create_user' => 'boolean',
             'password' => 'required_if:create_user,true|string|min:8|confirmed',
-            'role' => 'required_if:create_user,true|in:admin,front office,kasir,dokter,beautician',
+            'role' => 'required_if:create_user,true|in:admin,front office,kasir,dokter,beautician,pegawai',
         ]);
         
         if ($validator->fails()) {
@@ -82,10 +83,10 @@ class PegawaiController extends Controller
         \DB::beginTransaction();
         
         try {
-            $userId = null;
+            $userId = $request->id_user; // Use existing user ID if provided
             
-            // Create user if requested
-            if ($request->create_user) {
+            // Create user if requested and no existing user provided
+            if ($request->create_user && !$userId) {
                 $user = User::create([
                     'nama_user' => $request->nama_lengkap,
                     'email' => $request->email,

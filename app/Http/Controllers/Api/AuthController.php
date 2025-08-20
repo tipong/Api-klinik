@@ -625,4 +625,113 @@ class AuthController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Update user data (admin only)
+     */
+    public function updateUser(Request $request, $id)
+    {
+        $currentUser = $request->user();
+        
+        // Only admin can update user data
+        if (!$currentUser || $currentUser->role !== 'admin') {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Unauthorized. Only admin can update user data.',
+            ], 403);
+        }
+        
+        $targetUser = User::find($id);
+        if (!$targetUser) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'User not found',
+            ], 404);
+        }
+        
+        $validator = Validator::make($request->all(), [
+            'nama_user' => 'sometimes|required|string|max:255',
+            'email' => 'sometimes|required|email|unique:tb_user,email,' . $id . ',id_user',
+            'no_telp' => 'sometimes|required|string|max:255|unique:tb_user,no_telp,' . $id . ',id_user',
+            'role' => 'sometimes|required|in:admin,front office,kasir,dokter,beautician,pelanggan,pegawai',
+            'tanggal_lahir' => 'nullable|date',
+            'foto_profil' => 'nullable|string|max:255',
+            'password' => 'nullable|string|min:8',
+        ]);
+        
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Validation error',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+        
+        try {
+            $oldRole = $targetUser->role;
+            
+            // Update fields that are provided
+            if ($request->has('nama_user')) {
+                $targetUser->nama_user = $request->nama_user;
+            }
+            if ($request->has('email')) {
+                $targetUser->email = $request->email;
+            }
+            if ($request->has('no_telp')) {
+                $targetUser->no_telp = $request->no_telp;
+            }
+            if ($request->has('role')) {
+                $targetUser->role = $request->role;
+            }
+            if ($request->has('tanggal_lahir')) {
+                $targetUser->tanggal_lahir = $request->tanggal_lahir;
+            }
+            if ($request->has('foto_profil')) {
+                $targetUser->foto_profil = $request->foto_profil;
+            }
+            if ($request->has('password')) {
+                $targetUser->password = Hash::make($request->password);
+            }
+            
+            $targetUser->save();
+            
+            \Log::info('User updated by admin', [
+                'admin_id' => $currentUser->id_user,
+                'target_user_id' => $id,
+                'old_role' => $oldRole,
+                'new_role' => $targetUser->role,
+                'updated_fields' => array_keys($request->only(['nama_user', 'email', 'no_telp', 'role', 'tanggal_lahir', 'foto_profil']))
+            ]);
+            
+            return response()->json([
+                'status' => 'success',
+                'message' => 'User updated successfully',
+                'data' => [
+                    'id_user' => $targetUser->id_user,
+                    'nama_user' => $targetUser->nama_user,
+                    'email' => $targetUser->email,
+                    'no_telp' => $targetUser->no_telp,
+                    'role' => $targetUser->role,
+                    'tanggal_lahir' => $targetUser->tanggal_lahir,
+                    'foto_profil' => $targetUser->foto_profil,
+                    'is_active' => $targetUser->is_active,
+                    'created_at' => $targetUser->created_at,
+                    'updated_at' => $targetUser->updated_at,
+                ],
+            ]);
+            
+        } catch (\Exception $e) {
+            \Log::error('Error updating user', [
+                'error' => $e->getMessage(),
+                'admin_id' => $currentUser->id_user,
+                'target_user_id' => $id,
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return response()->json([
+                'status' => 'error',
+                'message' => 'An error occurred while updating user: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
 }

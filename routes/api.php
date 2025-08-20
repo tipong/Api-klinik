@@ -42,6 +42,7 @@ Route::prefix('public')->group(function () {
     Route::delete('/absensi/{id}', [AbsensiController::class, 'destroy']);
     Route::delete('/gaji/{id}', [GajiController::class, 'destroy']);
     Route::delete('/lowongan-pekerjaan/{id}', [LowonganPekerjaanController::class, 'publicDestroy']);
+    Route::delete('/lowongan-pekerjaan/{id}/force', [LowonganPekerjaanController::class, 'publicForceDestroy']);
     Route::delete('/pegawai/{id}', [PegawaiController::class, 'destroy']);
     Route::delete('/users/{id}', [AuthController::class, 'publicDeleteUser']);
 });

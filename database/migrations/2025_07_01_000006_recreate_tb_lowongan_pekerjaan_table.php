@@ -22,7 +22,7 @@ return new class extends Migration
             $table->string('pengalaman_minimal', 50)->nullable();
             $table->decimal('gaji_minimal', 12, 2)->nullable();
             $table->decimal('gaji_maksimal', 12, 2)->nullable();
-            $table->enum('status', ['aktif', 'nonaktif'])->nullable();
+            $table->string('status', 20)->nullable();
             $table->date('tanggal_mulai');
             $table->date('tanggal_selesai');
             $table->text('deskripsi')->nullable();

@@ -20,7 +20,7 @@ return new class extends Migration
             $table->time('jam_masuk')->nullable();
             $table->time('jam_keluar')->nullable();
             $table->date('tanggal');
-            $table->enum('status', ['Hadir', 'Sakit', 'Izin', 'Alpa'])->default('Hadir');
+            $table->string('status', 20)->default('Hadir');
             $table->timestamps();
             
             $table->foreign('id_pegawai')->references('id_pegawai')->on('tb_pegawai');

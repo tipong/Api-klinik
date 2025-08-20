@@ -24,7 +24,7 @@ return new class extends Migration
             $table->decimal('gaji_kehadiran', 12, 2)->default(0.00);
             $table->decimal('gaji_total', 12, 2);
             $table->date('tanggal_pembayaran')->nullable();
-            $table->enum('status', ['Terbayar', 'Belum Terbayar'])->default('Belum Terbayar');
+            $table->string('status', 20)->default('Belum Terbayar');
             $table->timestamps();
             
             $table->foreign('id_pegawai')->references('id_pegawai')->on('tb_pegawai');

@@ -11,8 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // For SQLite, we already have the correct check constraint from the initial migration
-        // No action needed for SQLite as it uses check constraints instead of enum
+        Schema::table('tb_lowongan_pekerjaan', function (Blueprint $table) {
+            $table->softDeletes(); // Adds deleted_at column
+        });
     }
 
     /**
@@ -20,6 +21,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        // No action needed for SQLite
+        Schema::table('tb_lowongan_pekerjaan', function (Blueprint $table) {
+            $table->dropSoftDeletes(); // Removes deleted_at column
+        });
     }
 };

@@ -538,30 +538,167 @@ class LowonganPekerjaanController extends Controller
     public function publicDestroy($id)
     {
         try {
+            Log::info('Public destroy lowongan called', ['id' => $id]);
+            
             $lowongan = LowonganPekerjaan::find($id);
             
             if (!$lowongan) {
+                Log::warning('Lowongan not found for deletion', ['id' => $id]);
                 return $this->errorResponse('Data lowongan tidak ditemukan', 404, []);
             }
             
             // Store data for response before deletion
             $responseData = [
-                'id_lowongan' => $lowongan->id_lowongan,
+                'id_lowongan' => $lowongan->id_lowongan_pekerjaan,
                 'judul_pekerjaan' => $lowongan->judul_pekerjaan,
                 'posisi' => $lowongan->posisi->nama_posisi ?? 'Unknown',
                 'status' => $lowongan->status
             ];
             
-            $lowongan->delete();
+            // Check if there are related applications
+            $applicationCount = $lowongan->lamaranPekerjaan()->count();
+            Log::info('Lowongan has applications', ['id' => $id, 'count' => $applicationCount]);
             
-            return $this->successResponse(
-                $responseData,
-                'Data lowongan berhasil dihapus'
+            // Use soft delete (will set deleted_at timestamp)
+            $deleted = $lowongan->delete();
+            
+            if ($deleted) {
+                Log::info('Lowongan soft deleted successfully', ['id' => $id]);
+                
+                $message = 'Lowongan kerja berhasil dihapus.';
+                if ($applicationCount > 0) {
+                    $message .= " Data lamaran terkait ({$applicationCount} lamaran) tetap tersimpan untuk keperluan arsip.";
+                }
+                
+                return $this->successResponse(
+                    $responseData,
+                    $message
+                );
+            } else {
+                Log::error('Failed to soft delete lowongan', ['id' => $id]);
+                return $this->errorResponse('Gagal menghapus data lowongan', 500, []);
+            }
+            
+        } catch (\Exception $e) {
+            Log::error('Exception in publicDestroy', [
+                'id' => $id,
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ]);
+            
+            return $this->errorResponse(
+                'Gagal menghapus data lowongan: ' . $e->getMessage(),
+                500,
+                ['error' => $e->getMessage()]
+            );
+        }
+    }
+
+    /**
+     * Public force delete method for frontend integration (no auth required)
+     */
+    public function publicForceDestroy($id)
+    {
+        try {
+            Log::info('Public force destroy lowongan called', ['id' => $id]);
+            
+            // Use withTrashed to include soft deleted records
+            $lowongan = LowonganPekerjaan::withTrashed()->find($id);
+            
+            if (!$lowongan) {
+                Log::warning('Lowongan not found for force deletion', ['id' => $id]);
+                return $this->errorResponse('Data lowongan tidak ditemukan', 404, []);
+            }
+            
+            // Store data for response before deletion
+            $responseData = [
+                'id_lowongan' => $lowongan->id_lowongan_pekerjaan,
+                'judul_pekerjaan' => $lowongan->judul_pekerjaan,
+                'posisi' => $lowongan->posisi->nama_posisi ?? 'Unknown',
+                'status' => $lowongan->status,
+                'was_deleted' => $lowongan->trashed()
+            ];
+            
+            // Check if there are related applications
+            $applicationCount = $lowongan->lamaranPekerjaan()->count();
+            Log::info('Lowongan has applications for force delete', ['id' => $id, 'count' => $applicationCount]);
+            
+            // Check for foreign key constraints before attempting force delete
+            if ($applicationCount > 0) {
+                Log::warning('Cannot force delete lowongan with related applications', [
+                    'id' => $id, 
+                    'application_count' => $applicationCount
+                ]);
+                
+                return $this->errorResponse(
+                    'Tidak dapat menghapus lowongan secara permanen',
+                    422,
+                    [
+                        'reason' => 'foreign_key_constraint',
+                        'message' => 'Lowongan ini memiliki data terkait yang masih aktif',
+                        'details' => [
+                            'total_lamaran' => $applicationCount,
+                            'solution' => 'Gunakan "Hapus Biasa" untuk menyembunyikan lowongan tanpa menghapus data terkait'
+                        ]
+                    ]
+                );
+            }
+            
+            // Force delete - this will permanently remove the record
+            $deleted = $lowongan->forceDelete();
+            
+            if ($deleted) {
+                Log::info('Lowongan force deleted successfully', ['id' => $id]);
+                
+                return $this->successResponse(
+                    $responseData,
+                    'Lowongan kerja berhasil dihapus PERMANEN dari database.'
+                );
+            } else {
+                Log::error('Failed to force delete lowongan', ['id' => $id]);
+                return $this->errorResponse('Gagal menghapus data lowongan secara permanen', 500, []);
+            }
+            
+        } catch (\Illuminate\Database\QueryException $e) {
+            Log::error('Database constraint violation in publicForceDestroy', [
+                'id' => $id,
+                'error' => $e->getMessage(),
+                'sql_state' => $e->getCode()
+            ]);
+            
+            // Handle foreign key constraint specifically
+            if (str_contains($e->getMessage(), 'FOREIGN KEY constraint failed') || 
+                str_contains($e->getMessage(), 'Integrity constraint violation')) {
+                
+                return $this->errorResponse(
+                    'Tidak dapat menghapus lowongan secara permanen karena masih memiliki data terkait',
+                    422,
+                    [
+                        'reason' => 'foreign_key_constraint',
+                        'message' => 'Lowongan ini memiliki lamaran atau data terkait lainnya',
+                        'solution' => 'Gunakan "Hapus Biasa" untuk menyembunyikan lowongan',
+                        'technical_details' => 'Foreign key constraint violation'
+                    ]
+                );
+            }
+            
+            return $this->errorResponse(
+                'Gagal menghapus data lowongan: Database error',
+                500,
+                ['error' => $e->getMessage()]
             );
             
         } catch (\Exception $e) {
+            Log::error('Exception in publicForceDestroy', [
+                'id' => $id,
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ]);
+            
             return $this->errorResponse(
-                'Gagal menghapus data lowongan',
+                'Gagal menghapus data lowongan secara permanen: ' . $e->getMessage(),
                 500,
                 ['error' => $e->getMessage()]
             );
